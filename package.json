@@ -1,0 +1,25 @@
+{
+	"name":            "schemary",
+	"description":     "A schema control utility. It provides validation and enforcement of object schemas. Schemary is to schema as Trickery is to trick. It is not an ORM.",
+	"version":         "0.0.1",
+	"author":          "Anthony Hildoer <ahildoer@bluerival.com>",
+	"repository":      {
+		"type": "git",
+		"url":  ""
+	},
+	"dependencies":    {
+		"moment": "~2"
+	},
+	"devDependencies": {
+		"mocha": "~1"
+	},
+	"keywords":        [
+		"schema",
+		"validate",
+		"enforce"
+	],
+	"engines":         {
+		"node": ">=0.10.23"
+	},
+	"license":         "MIT"
+}
