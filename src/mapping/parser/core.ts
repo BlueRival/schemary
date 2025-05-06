@@ -74,38 +74,72 @@ export class Parser {
    * @throws ParseError if unclosed brackets are found
    */
   private validateUnclosedBrackets(segments: PathSegment[]): void {
-    // Check if the last segment is an ObjectFieldSegment with unclosed brackets
-    if (segments.length > 0) {
-      const lastSegment = segments[segments.length - 1];
-      
-      if (lastSegment instanceof ObjectFieldSegmentClass) {
-        const name = lastSegment.name;
-        
-        // Check for unclosed brackets without proper escaping
-        if (name.includes('[') && !name.includes(']')) {
-          // Count how many escaped brackets we have
-          const text = (lastSegment as ObjectFieldSegmentClass).text;
-          const escapedBracketCount = (text.match(/\\\[/g) || []).length;
-          const openBracketCount = (name.match(/\[/g) || []).length;
-          
-          // If there are open brackets without matching close brackets
-          if (openBracketCount > escapedBracketCount) {
-            throw new ParseError('Unclosed bracket in path', this.position);
-          }
-        }
-        
-        // Check for unclosed array slice (look for '[[' pattern without matching ']]')
-        if (name.includes('[[') && !name.includes(']]')) {
-          // Count escaped double brackets
-          const text = (lastSegment as ObjectFieldSegmentClass).text;
-          const escapedDoubleBracketCount = (text.match(/\\\[\[/g) || []).length;
-          const openDoubleBracketCount = (name.match(/\[\[/g) || []).length;
-          
-          // If there are open double brackets without matching close brackets
-          if (openDoubleBracketCount > escapedDoubleBracketCount) {
-            throw new ParseError('Unclosed array slice bracket in path', this.position);
-          }
-        }
+    // Only validate if we have at least one segment
+    if (segments.length === 0) {
+      return;
+    }
+
+    const lastSegment = segments[segments.length - 1];
+
+    // We only need to check ObjectFieldSegmentClass segments for bracket issues
+    if (!(lastSegment instanceof ObjectFieldSegmentClass)) {
+      return;
+    }
+
+    const { name, sourceText } = lastSegment;
+
+    // Check for unclosed single brackets
+    this.validateBracketPairs(
+      name,
+      sourceText,
+      '[',
+      ']',
+      /\\\[/g,
+      /\[/g,
+      'Unclosed bracket in path',
+    );
+
+    // Check for unclosed double brackets (array slice)
+    this.validateBracketPairs(
+      name,
+      sourceText,
+      '[[',
+      ']]',
+      /\\\[\[/g,
+      /\[\[/g,
+      'Unclosed array slice bracket in path',
+    );
+  }
+
+  /**
+   * Helper method to validate bracket pairs of different types
+   * @param name The field name to check for bracket patterns
+   * @param text The original field text with escape sequences
+   * @param openPattern The opening bracket pattern to check
+   * @param closePattern The closing bracket pattern to check
+   * @param escapedRegex Regex to match escaped opening brackets
+   * @param openRegex Regex to match opening brackets
+   * @param errorMessage Error message to throw if validation fails
+   * @throws ParseError if bracket validation fails
+   */
+  private validateBracketPairs(
+    name: string,
+    text: string,
+    openPattern: string,
+    closePattern: string,
+    escapedRegex: RegExp,
+    openRegex: RegExp,
+    errorMessage: string,
+  ): void {
+    // Check if we have opening brackets without matching closing brackets
+    if (name.includes(openPattern) && !name.includes(closePattern)) {
+      // Count how many escaped brackets we have
+      const escapedCount = (text.match(escapedRegex) || []).length;
+      const openCount = (name.match(openRegex) || []).length;
+
+      // If there are open brackets without matching close brackets
+      if (openCount > escapedCount) {
+        throw new ParseError(errorMessage, this.position);
       }
     }
   }
@@ -117,7 +151,7 @@ export class Parser {
   private isIndexOrSlice(): boolean {
     // Empty "[]" means a literal field name; otherwise treat as index or slice.
     if (this.position + 1 >= this.input.length) {
-      return false;
+      throw new ParseError('Unclosed bracket in path', this.position);
     }
     return this.input[this.position + 1] !== ']';
   }
