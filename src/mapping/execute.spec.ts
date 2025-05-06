@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { compile, map, MAP_DIRECTION, MappingRuleParams } from './index.js';
+import {
+  compile,
+  map,
+  MAP_DIRECTION,
+  MappingPlanParams,
+  MappingPlanRuleOrder,
+  MappingRuleParams,
+} from './index.js';
 import { JSONType } from './types.js';
 
 // Uses these short-cut flags on tests to quick-pass true for the respective options
@@ -13,6 +20,7 @@ const rightToLeft = true;
 type TestMapping = {
   name?: string;
   rules: MappingRuleParams<any, any>[];
+  plan?: MappingPlanParams;
   bidirectional?: boolean;
   left: JSONType;
   leftOverride?: JSONType;
@@ -39,7 +47,7 @@ function generateTests(group: string, tests: TestMapping[]) {
       }
       name = `Array Segment test: ${name}`;
 
-      const plan = compile(test.rules);
+      const plan = compile(test.rules, test.plan);
 
       const testInput = test.rightToLeft ? test.right : test.left;
       const testResult = test.rightToLeft ? test.left : test.right;
@@ -143,6 +151,93 @@ describe('JSON Schema Mapping', () => {
           streetAddress: '123 Main St',
           city: 'Anytown',
         },
+      },
+    },
+  ]);
+
+  generateTests('rule order with MappingPlanRuleOrder', [
+    {
+      name: 'should demonstrate ASC rule order (last rule wins)',
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      right: {
+        // With ASC order, sourceField2 overwrites sourceField1
+        targetField: 'second value',
+      },
+    },
+    {
+      name: 'should demonstrate DESC rule order (first rule wins)',
+      plan: {
+        order: {
+          toLeft: MappingPlanRuleOrder.DESC,
+          toRight: MappingPlanRuleOrder.DESC,
+        },
+      },
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      right: {
+        // With DESC order, rules are reversed, so sourceField1 overwrites sourceField2
+        targetField: 'first value',
+      },
+    },
+    {
+      name: 'should handle rule order with overrideValues (overrides always win)',
+      plan: {
+        order: {
+          toLeft: MappingPlanRuleOrder.DESC,
+          toRight: MappingPlanRuleOrder.DESC,
+        },
+      },
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      leftOverride: {
+        targetField: 'override value',
+      },
+      right: {
+        // Regardless of rule order, overrides always win
+        targetField: 'override value',
+      },
+    },
+    {
+      name: 'should demonstrate bidirectional ASC and DESC rule order',
+      plan: {
+        order: {
+          toLeft: MappingPlanRuleOrder.DESC,
+          toRight: MappingPlanRuleOrder.DESC,
+        },
+      },
+      rules: [
+        { left: 'sourceField1', right: 'targetField1' },
+        { left: 'sourceField2', right: 'targetField1' }, // Overwrites targetField1 in ASC order
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      right: {
+        // With DESC order in left-to-right, first rule wins because it writes last
+        targetField1: 'first value',
       },
     },
   ]);
@@ -1087,6 +1182,96 @@ describe('JSON Schema Mapping', () => {
       right: {
         givenName: 'Jane',
         familyName: 'Doe',
+      },
+    },
+    {
+      name: 'should apply overrideValues with rule order ASC (order matters)',
+      rules: [
+        // First rule creates the user object
+        { left: 'profiles[0].name', right: 'user.name' },
+        // Second rule adds another property to the same user object
+        { left: 'profiles[0].role', right: 'user.role' },
+      ],
+      left: {
+        profiles: [{ name: 'John', role: 'Developer' }],
+      },
+      // This override tests ASC order where first we map name, then role, then apply overrides
+      leftOverride: {
+        user: {
+          name: 'Jane',
+        },
+      },
+      right: {
+        user: {
+          name: 'Jane', // From override
+          role: 'Developer', // From mapping
+        },
+      },
+    },
+  ]);
+
+  generateTests('rule order with MappingPlanRuleOrder', [
+    {
+      name: 'should demonstrate ASC rule order (last rule wins)',
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      right: {
+        // With ASC order, sourceField2 overwrites sourceField1
+        targetField: 'second value',
+      },
+    },
+    {
+      name: 'should demonstrate DESC rule order (first rule wins)',
+      plan: {
+        order: {
+          toLeft: MappingPlanRuleOrder.DESC,
+          toRight: MappingPlanRuleOrder.DESC,
+        },
+      },
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      right: {
+        // With DESC order, rules are reversed, so sourceField1 overwrites sourceField2
+        targetField: 'first value',
+      },
+    },
+    {
+      name: 'should handle rule order with overrideValues (overrides always win)',
+      plan: {
+        order: {
+          toLeft: MappingPlanRuleOrder.DESC,
+          toRight: MappingPlanRuleOrder.DESC,
+        },
+      },
+      rules: [
+        // Both rules target the same field, order matters!
+        { left: 'sourceField1', right: 'targetField' },
+        { left: 'sourceField2', right: 'targetField' },
+      ],
+      left: {
+        sourceField1: 'first value',
+        sourceField2: 'second value',
+      },
+      leftOverride: {
+        targetField: 'override value',
+      },
+      right: {
+        // Regardless of rule order, overrides always win
+        targetField: 'override value',
       },
     },
   ]);

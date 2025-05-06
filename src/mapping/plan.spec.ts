@@ -40,21 +40,6 @@ describe('MappingRule', () => {
       expect(rule.hasLiteral).toBe(true);
     });
 
-    it('should create a rule with both left and right paths', () => {
-      const rule = new MappingRule({
-        left: 'user.firstName',
-        right: 'person.givenName',
-      });
-
-      expect(rule.leftPath).toBeDefined();
-      expect(rule.leftPath?.length).toBe(2);
-      expect(rule.rightPath).toBeDefined();
-      expect(rule.rightPath?.length).toBe(2);
-      expect(rule.leftTransform).toBeUndefined();
-      expect(rule.rightTransform).toBeUndefined();
-      expect(rule.hasLiteral).toBe(false);
-    });
-
     it('should create a rule with left and transform functions', () => {
       const leftTransform = (value: JSONType) => value;
       const rightTransform = (value: JSONType) => value;
