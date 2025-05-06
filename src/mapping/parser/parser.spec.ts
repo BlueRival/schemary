@@ -914,6 +914,42 @@ describe('Path Parser', () => {
     });
   });
 
+  describe('Edge cases', () => {
+    it('should handle bracket at end of input', () => {
+      // Testing the condition: if (this.position + 1 >= this.input.length) { return false; }
+      const parser = new Parser('users[');
+      expect(() => parser.parsePath()).toThrow(ParseError);
+      expect(() => parser.parsePath()).toThrow('Expected integer');
+    });
+
+    it('should handle dots inside escaped brackets in field names', () => {
+      // Testing the condition: if (char === '.' && insideEscapedBrackets) {...}
+      const parser = new Parser('data.\\[field.name\\]');
+      const segments = parser.parsePath();
+
+      expect(segments).toHaveLength(2);
+      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+        '[field.name]',
+      );
+    });
+
+    it('should handle sequential dots inside escaped brackets', () => {
+      const parser = new Parser('data.\\[field..with...dots\\]');
+      const segments = parser.parsePath();
+
+      expect(segments).toHaveLength(2);
+      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+        '[field..with...dots]',
+      );
+    });
+  });
+
   describe('Error cases', () => {
     describe('Parser error cases', () => {
       const largeNumber = '9'.repeat(1000);
