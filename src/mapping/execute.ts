@@ -1,28 +1,16 @@
 import { MappingPlan, MappingPlanRuleOrder } from './plan.js';
 import { PathSegment } from './parser/ast/pathSegment.class.js';
 import { JSONType } from './types.js';
-import { Parser } from './parser/core.js';
 
-export function getValue(
-  source: JSONType,
-  path: PathSegment[] | string,
-): JSONType | undefined {
-  if (typeof path === 'string') {
-    path = new Parser(path).parsePath();
-  }
-
+function getValue(source: JSONType, path: PathSegment[]): JSONType | undefined {
   return PathSegment.getValue(source, path);
 }
 
-export function setValue(
+function setValue(
   destination: JSONType,
   value: JSONType | undefined,
-  path: PathSegment[] | string,
+  path: PathSegment[],
 ): JSONType | undefined {
-  if (typeof path === 'string') {
-    path = new Parser(path).parsePath();
-  }
-
   return PathSegment.setValue(destination, value, path);
 }
 

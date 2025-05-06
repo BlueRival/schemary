@@ -916,4 +916,178 @@ describe('JSON Schema Mapping', () => {
   ]);
 
   generateTests('complex mapping', []);
+
+  generateTests('overrideValues in mapping', [
+    {
+      name: 'should override mapped values with overrideValues (left-to-right)',
+      rules: [
+        { left: 'user.firstName', right: 'givenName' },
+        { left: 'user.lastName', right: 'familyName' },
+        { left: 'user.age', right: 'age' },
+      ],
+      left: {
+        user: {
+          firstName: 'John',
+          lastName: 'Doe',
+          age: 30,
+        },
+      },
+      leftOverride: {
+        givenName: 'Jane',
+        age: 25,
+      },
+      right: {
+        givenName: 'Jane',
+        familyName: 'Doe',
+        age: 25,
+      },
+    },
+    {
+      name: 'should override mapped values with overrideValues (right-to-left)',
+      rightToLeft: true,
+      rules: [
+        { left: 'user.firstName', right: 'givenName' },
+        { left: 'user.lastName', right: 'familyName' },
+        { left: 'user.age', right: 'age' },
+      ],
+      right: {
+        givenName: 'John',
+        familyName: 'Doe',
+        age: 30,
+      },
+      rightOverride: {
+        user: {
+          firstName: 'Jane',
+          age: 25,
+        },
+      },
+      left: {
+        user: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+          age: 25,
+        },
+      },
+    },
+    {
+      name: 'should override nested fields with overrideValues',
+      rules: [
+        { left: 'user.contact.email', right: 'profile.emailAddress' },
+        { left: 'user.contact.phone', right: 'profile.phoneNumber' },
+        { left: 'user.address.street', right: 'location.streetAddress' },
+        { left: 'user.address.city', right: 'location.city' },
+      ],
+      left: {
+        user: {
+          contact: {
+            email: 'john@example.com',
+            phone: '555-1234',
+          },
+          address: {
+            street: '123 Main St',
+            city: 'Anytown',
+          },
+        },
+      },
+      leftOverride: {
+        profile: {
+          emailAddress: 'jane@example.com',
+        },
+        location: {
+          city: 'New City',
+        },
+      },
+      right: {
+        profile: {
+          emailAddress: 'jane@example.com',
+          phoneNumber: '555-1234',
+        },
+        location: {
+          streetAddress: '123 Main St',
+          city: 'New City',
+        },
+      },
+    },
+    {
+      name: 'should override array elements with overrideValues',
+      rules: [
+        { left: 'users[0].name', right: 'firstUser' },
+        { left: 'users[1].email', right: 'secondUserEmail' },
+        { left: 'users[-1].name', right: 'lastUser' },
+      ],
+      left: {
+        users: [
+          { name: 'Alice', email: 'alice@example.com' },
+          { name: 'Bob', email: 'bob@example.com' },
+          { name: 'Charlie', email: 'charlie@example.com' },
+        ],
+      },
+      leftOverride: {
+        firstUser: 'Alicia',
+        lastUser: 'Charles',
+      },
+      right: {
+        firstUser: 'Alicia',
+        lastUser: 'Charles',
+        secondUserEmail: 'bob@example.com',
+      },
+    },
+    {
+      name: 'should prioritize overrideValues over literals',
+      rules: [
+        { left: 'user.name', right: 'userName' },
+        { left: 'user.active', literal: true },
+        { literal: 'default name', right: 'defaultName' },
+      ],
+      left: {
+        user: {
+          name: 'Alice',
+          active: false,
+        },
+      },
+      leftOverride: {
+        userName: 'Alicia',
+        defaultName: 'custom name',
+      },
+      right: {
+        userName: 'Alicia',
+        defaultName: 'custom name',
+      },
+    },
+    {
+      name: 'should handle overrideValues with array segments',
+      rules: [{ left: '[[0,2]]', right: 'firstTwo' }],
+      left: [10, 20, 30, 40, 50],
+      leftOverride: {
+        firstTwo: [100, 200],
+      },
+      right: {
+        firstTwo: [100, 200],
+      },
+    },
+    {
+      name: 'should ignore overrideValues that do not correspond to target paths',
+      rules: [
+        { left: 'user.firstName', right: 'givenName' },
+        { left: 'user.lastName', right: 'familyName' },
+      ],
+      left: {
+        user: {
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      },
+      leftOverride: {
+        givenName: 'Jane',
+        unused: 'This should be ignored',
+        nonexistent: {
+          path: 'This should also be ignored',
+        },
+      },
+      right: {
+        givenName: 'Jane',
+        familyName: 'Doe',
+      },
+    },
+  ]);
 });
