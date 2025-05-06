@@ -3,14 +3,6 @@ import { PathSegment } from './parser/ast/pathSegment.class.js';
 import { JSONType } from './types.js';
 import { Parser } from './parser/core.js';
 
-const DEBUG_LOGGING = false;
-
-function log(...args: unknown[]): void {
-  if (DEBUG_LOGGING) {
-    console.log(...args);
-  }
-}
-
 export function getValue(
   source: JSONType,
   path: PathSegment[] | string,
@@ -68,8 +60,6 @@ export function map(
 
   // Apply each mapping rule
   for (const rule of rules) {
-    log('rule start', rule);
-
     const targetPath =
       direction === MAP_DIRECTION.LeftToRight ? rule.rightPath : rule.leftPath;
 
@@ -91,7 +81,6 @@ export function map(
 
     if (overrideValues !== undefined) {
       valueToSet = getValue(overrideValues, targetPath);
-      log('overrides', JSON.stringify(valueToSet));
     }
 
     // We only look for literals and real values if overrides didn't have a value to set
@@ -99,25 +88,17 @@ export function map(
     if (valueToSet === undefined) {
       if (rule.hasLiteral) {
         valueToSet = rule.literal;
-        log('literal', JSON.stringify(valueToSet));
       } else if (sourcePath) {
         valueToSet = getValue(sourceValue, sourcePath);
-        log('source', JSON.stringify(valueToSet));
 
         if (transform) {
           // we know that whatever type is returned from transform is a JSONType
           valueToSet = transform(valueToSet) as JSONType;
-          log('transform', JSON.stringify(valueToSet));
         }
       }
     }
-    log('result 1', result);
-    log('valueToSet', valueToSet);
-    log('targetPath', targetPath);
     // finally, send the value to set to the target path on the current result.
     result = setValue(result, valueToSet, targetPath);
-
-    log('result 2', result, '\n\n\n');
   }
 
   return result;
