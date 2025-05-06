@@ -915,11 +915,36 @@ describe('Path Parser', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle bracket at end of input', () => {
-      // Testing the condition: if (this.position + 1 >= this.input.length) { return false; }
+    it('should throw error for unclosed bracket at end of input', () => {
+      // This should throw an error as the bracket is not closed
       const parser = new Parser('users[');
+
+      // Now we expect the parser to throw an error for unclosed brackets
       expect(() => parser.parsePath()).toThrow(ParseError);
-      expect(() => parser.parsePath()).toThrow('Expected integer');
+      expect(() => parser.parsePath()).toThrow('Unclosed bracket in path');
+    });
+
+    it('should throw error for unclosed array slice bracket', () => {
+      // This should throw an error as the outer bracket of the slice is not closed
+      const parser = new Parser('users[[9]');
+
+      // Now we expect the parser to throw an error for unclosed array slice brackets
+      expect(() => parser.parsePath()).toThrow(ParseError);
+      expect(() => parser.parsePath()).toThrow(
+        "Parse error at position 9: Expected array slice closing bracket ']', got 'end of input",
+      );
+    });
+
+    it('should not throw error for properly escaped brackets', () => {
+      // This contains escaped brackets in the field name, so it should not trigger errors
+      const parser = new Parser('data.\\[field\\]');
+      const segments = parser.parsePath();
+
+      expect(segments).toHaveLength(2);
+      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('[field]');
     });
 
     it('should handle dots inside escaped brackets in field names', () => {

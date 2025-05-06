@@ -61,8 +61,53 @@ export class Parser {
       break;
     }
 
+    // Validate if there are any unclosed brackets at the end
+    this.validateUnclosedBrackets(segments);
+
     this.segments = segments;
     return segments;
+  }
+
+  /**
+   * Validates if there are any unclosed brackets in the parsed segments
+   * @param segments The parsed path segments
+   * @throws ParseError if unclosed brackets are found
+   */
+  private validateUnclosedBrackets(segments: PathSegment[]): void {
+    // Check if the last segment is an ObjectFieldSegment with unclosed brackets
+    if (segments.length > 0) {
+      const lastSegment = segments[segments.length - 1];
+      
+      if (lastSegment instanceof ObjectFieldSegmentClass) {
+        const name = lastSegment.name;
+        
+        // Check for unclosed brackets without proper escaping
+        if (name.includes('[') && !name.includes(']')) {
+          // Count how many escaped brackets we have
+          const text = (lastSegment as ObjectFieldSegmentClass).text;
+          const escapedBracketCount = (text.match(/\\\[/g) || []).length;
+          const openBracketCount = (name.match(/\[/g) || []).length;
+          
+          // If there are open brackets without matching close brackets
+          if (openBracketCount > escapedBracketCount) {
+            throw new ParseError('Unclosed bracket in path', this.position);
+          }
+        }
+        
+        // Check for unclosed array slice (look for '[[' pattern without matching ']]')
+        if (name.includes('[[') && !name.includes(']]')) {
+          // Count escaped double brackets
+          const text = (lastSegment as ObjectFieldSegmentClass).text;
+          const escapedDoubleBracketCount = (text.match(/\\\[\[/g) || []).length;
+          const openDoubleBracketCount = (name.match(/\[\[/g) || []).length;
+          
+          // If there are open double brackets without matching close brackets
+          if (openDoubleBracketCount > escapedDoubleBracketCount) {
+            throw new ParseError('Unclosed array slice bracket in path', this.position);
+          }
+        }
+      }
+    }
   }
 
   /**
