@@ -1001,6 +1001,92 @@ describe('Schema', () => {
       expect(result).toEqual({ value: 'overridden' });
     });
 
+    it('should use defaults when the path does not exist', () => {
+      const obj = { existing: { value: 'something' } };
+      const result = extract(obj, 'nonexistent.value', z.string(), {
+        defaults: 'default value',
+      });
+
+      expect(result).toEqual('default value');
+    });
+
+    it('should use default primitive when current value is not an object', () => {
+      const obj = { primitive: 42 };
+      const result = extract(obj, 'primitive', z.number(), { defaults: 100 });
+
+      // Should still use the original value since it exists
+      expect(result).toEqual(42);
+    });
+
+    it('should merge default object with current object', () => {
+      const obj = { config: { name: 'original', active: true } };
+      const result = extract(
+        obj,
+        'config',
+        z.object({
+          name: z.string(),
+          active: z.boolean(),
+          timeout: z.number(),
+        }),
+        { defaults: { name: 'default name', timeout: 30 } },
+      );
+
+      // Current name (original) should be preserved, default timeout added
+      expect(result).toEqual({
+        name: 'original',
+        active: true,
+        timeout: 30,
+      });
+    });
+
+    it('should use defaults with a null/undefined value', () => {
+      const obj = { config: null };
+      const result = extract(
+        obj,
+        'config',
+        z.object({
+          name: z.string(),
+          timeout: z.number(),
+        }),
+        { defaults: { name: 'default name', timeout: 30 } },
+      );
+
+      expect(result).toEqual({
+        name: 'default name',
+        timeout: 30,
+      });
+    });
+
+    it('should handle array merging with defaults', () => {
+      const obj = { items: [1, 2] };
+      const result = extract(obj, 'items', z.array(z.number()), {
+        defaults: [3, 4, 5],
+      });
+
+      // Original array should be preserved as array merging gives priority to the current values
+      expect(result).toEqual([1, 2, 5]);
+    });
+
+    it('should use defaults with different types (non-matching arrays/objects)', () => {
+      const obj = { config: [1, 2, 3] };
+
+      const result = extract(obj, 'config', z.array(z.number()), {
+        defaults: { name: 'default', value: 42 } as unknown as number[], // force type to do error checking
+      });
+
+      // When types don't match, should keep the current value
+      expect(result).toEqual([1, 2, 3]);
+
+      // Test the reverse case
+      const obj2 = { config: { name: 'test' } };
+      const result2 = extract(obj2, 'config', z.object({ name: z.string() }), {
+        defaults: [1, 2, 3] as unknown as { name: string }, // force type to do error checking
+      });
+
+      // When types don't match, should keep the current value
+      expect(result2).toEqual({ name: 'test' });
+    });
+
     it('should extract a primitive', () => {
       const obj = { nested: { value: 'original' } };
       const result = extract(obj, 'nested.value', z.string());
@@ -1233,6 +1319,79 @@ describe('Schema', () => {
           expect('wrong error type').toBe('test failed');
         }
       }
+    });
+
+    it('should handle null or non-object values by replacing with an empty object before applying overrides', () => {
+      // Test with null value
+      const objWithNull = { config: null };
+      const result1 = extract(
+        objWithNull,
+        'config',
+        z.object({
+          value: z.string(),
+        }),
+        { overrides: { value: 'overridden' } },
+      );
+      expect(result1).toEqual({ value: 'overridden' });
+
+      // Test with primitive value
+      const objWithPrimitive = { config: 42 };
+      const result2 = extract(
+        objWithPrimitive,
+        'config',
+        z.object({
+          value: z.string(),
+        }),
+        { overrides: { value: 'overridden' } },
+      );
+      expect(result2).toEqual({ value: 'overridden' });
+    });
+
+    it('should handle applying both defaults and overrides together', () => {
+      const obj = { config: { existing: 'original' } };
+      const result = extract(
+        obj,
+        'config',
+        z.object({
+          existing: z.string(),
+          default: z.string(),
+          override: z.string(),
+        }),
+        {
+          defaults: { default: 'from default', override: 'from default' },
+          overrides: { override: 'from override' },
+        },
+      );
+
+      // Should merge in this order: defaults -> original -> overrides
+      expect(result).toEqual({
+        existing: 'original',
+        default: 'from default',
+        override: 'from override',
+      });
+    });
+
+    it('should use primitive defaults directly if defaults is a primitive', () => {
+      const obj = {};
+      const result = extract(obj, 'nonexistent', z.string(), {
+        defaults: 'default value',
+      });
+
+      expect(result).toEqual('default value');
+    });
+
+    // Test internal merge function behavior
+    it('should properly merge arrays', () => {
+      const obj = { items: [1, 2, 3, 4] };
+
+      // Test merging with shorter array (should keep first array's length)
+      const result1 = extract(obj, 'items', z.array(z.number()), {
+        overrides: [5, 6],
+      });
+
+      // Current behavior is to splice the second array into the first,
+      // replacing only the elements in the range of the second array
+      expect(result1).toEqual([5, 6, 3, 4]);
     });
 
     it('should throw a specific error when array index is out of bounds', () => {

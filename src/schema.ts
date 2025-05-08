@@ -222,7 +222,7 @@ export function extract<T>(
     if (!(part in current)) {
       if (options?.defaults) {
         current = options.defaults as JSONType; // we know this is the case because of how Overrides<> works
-        break;
+        break; // we are out of path, so the default becomes current
       }
 
       throw new Error(`Path ends at [${walkedPath.join('.')}]`);
@@ -233,8 +233,8 @@ export function extract<T>(
   }
 
   function merge(first: JSONType, second: JSONType): JSONType {
-    // if they are not the same type, take the second one
-    if (Array.isArray(second) !== Array.isArray(first)) {
+    // we don't try to merge primitives or dissimilar types, just keep the priority
+    if (Array.isArray(first) !== Array.isArray(second) || _isPrimitive(first)) {
       return second;
     }
 
@@ -242,7 +242,11 @@ export function extract<T>(
       // we know its an array because of the Array.isArray() calls
       const scopedSecond = second as JSONArray;
 
-      return first.splice(0, scopedSecond.length, ...scopedSecond);
+      first = clone(first);
+
+      first.splice(0, scopedSecond.length, ...scopedSecond);
+
+      return first;
     } else {
       // we know they are both objects because of the Array.isArray() calls
       return {
@@ -254,24 +258,20 @@ export function extract<T>(
 
   if (options?.defaults) {
     if (_isPrimitive(options.defaults)) {
-      return schema.parse(options.defaults);
-    }
-
-    if (typeof current !== 'object' || current === null) {
-      current = {};
+      // Whatever in current is fine, the only time a primitive overrides the
+      // real value is if the path doesn't exist, and that is handled above
+      // in the loop.
+      return schema.parse(current);
     }
 
     // we know that Overrides<> is a partial of a JSONType
+    // merge will push current into defaults
     current = merge(options.defaults as JSONType, current);
   }
 
   if (options?.overrides) {
     if (_isPrimitive(options?.overrides)) {
       return schema.parse(options?.overrides);
-    }
-
-    if (typeof current !== 'object' || current === null) {
-      current = {};
     }
 
     current = merge(current, options.overrides as JSONType);
