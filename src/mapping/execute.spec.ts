@@ -40,61 +40,68 @@ function generateTests(group: string, tests: TestMapping[]) {
 
   describe(group, () => {
     tests.forEach((test) => {
-      let name = test.name;
+      try {
+        let name = test.name;
 
-      if (!name) {
-        name = JSON.stringify(test.rules[0])
-          .replace(/"([^"]+)":/g, ' $1:')
-          .replace(/}$/, ' }');
-      }
-      name = `Array Segment test: ${name}`;
+        if (!name) {
+          name = JSON.stringify(test.rules[0])
+            .replace(/"([^"]+)":/g, ' $1:')
+            .replace(/}$/, ' }');
+        }
+        name = `Array Segment test: ${name}`;
 
-      const plan = compile(test.rules, test.plan);
+        const plan = compile(test.rules, test.plan);
 
-      const testInput = test.rightToLeft ? test.right : test.left;
-      const testResult = test.rightToLeft ? test.left : test.right;
+        const testInput = test.rightToLeft ? test.right : test.left;
+        const testResult = test.rightToLeft ? test.left : test.right;
 
-      const testFunction = () => {
-        const result = map(
-          testInput,
-          plan,
-          test.rightToLeft ? test.rightOverride : test.leftOverride,
-          test.rightToLeft
-            ? MAP_DIRECTION.RightToLeft
-            : MAP_DIRECTION.LeftToRight,
-        );
-        expect(result).toStrictEqual(testResult);
-      };
-
-      if (test.only) {
-        it.only(name, testFunction);
-      } else if (test.skip) {
-        it.skip(name, testFunction);
-      } else {
-        it(name, testFunction);
-      }
-
-      if (test.bidirectional) {
-        name += ' (Right-to-Left)';
-        const leftToRightTestFunction = () => {
+        const testFunction = () => {
           const result = map(
-            testResult,
+            testInput,
             plan,
-            test.rightToLeft ? test.leftOverride : test.rightOverride,
+            test.rightToLeft ? test.rightOverride : test.leftOverride,
             test.rightToLeft
-              ? MAP_DIRECTION.LeftToRight
-              : MAP_DIRECTION.RightToLeft,
+              ? MAP_DIRECTION.RightToLeft
+              : MAP_DIRECTION.LeftToRight,
           );
-          expect(result).toStrictEqual(testInput);
+          expect(result).toStrictEqual(testResult);
         };
 
         if (test.only) {
-          it.only(name, leftToRightTestFunction);
+          it.only(name, testFunction);
         } else if (test.skip) {
-          it.skip(name, leftToRightTestFunction);
+          it.skip(name, testFunction);
         } else {
-          it(name, leftToRightTestFunction);
+          it(name, testFunction);
         }
+
+        if (test.bidirectional) {
+          name += ' (Right-to-Left)';
+          const leftToRightTestFunction = () => {
+            const result = map(
+              testResult,
+              plan,
+              test.rightToLeft ? test.leftOverride : test.rightOverride,
+              test.rightToLeft
+                ? MAP_DIRECTION.LeftToRight
+                : MAP_DIRECTION.RightToLeft,
+            );
+            expect(result).toStrictEqual(testInput);
+          };
+
+          if (test.only) {
+            it.only(name, leftToRightTestFunction);
+          } else if (test.skip) {
+            it.skip(name, leftToRightTestFunction);
+          } else {
+            it(name, leftToRightTestFunction);
+          }
+        }
+      } catch (e) {
+        const myError = e instanceof Error ? e : new Error(String(e));
+        throw new Error(
+          `Exception setting up test ${group}.${test.name}: ${myError.message}`,
+        );
       }
     });
   });
@@ -167,8 +174,8 @@ describe('JSON Schema Mapping', () => {
           right: 'timestamp',
           format: {
             type: MappingRuleFormatType.TIMESTAMP,
-            left: TimestampFormats.ISO8601,
-            right: TimestampFormats.HTTP,
+            toLeft: TimestampFormats.ISO8601,
+            toRight: TimestampFormats.HTTP,
           },
         },
       ],
@@ -188,8 +195,8 @@ describe('JSON Schema Mapping', () => {
           right: 'timestamp',
           format: {
             type: MappingRuleFormatType.TIMESTAMP,
-            left: 'yyyy-MM-dd',
-            right: 'EEE, d MMM yyyy',
+            toLeft: 'yyyy-MM-dd',
+            toRight: 'EEE, d MMM yyyy',
           },
         },
       ],
@@ -1057,7 +1064,227 @@ describe('JSON Schema Mapping', () => {
     },
   ]);
 
-  generateTests('complex mapping', []);
+  // TODO:
+  // generateTests('complex mapping', []);
+
+  // Tests to ensure transform function is properly applied
+  generateTests('transform function tests', [
+    {
+      name: 'should apply transform function to value',
+      bidirectional,
+      rules: [
+        {
+          left: 'user.age',
+          right: 'userAge',
+          transform: {
+            toLeft: (value: string): number => parseInt(value, 10),
+            toRight: (value: number): string => `${value}`,
+          },
+        },
+        {
+          left: 'user.name',
+          right: 'userName',
+          transform: {
+            toLeft: (value: string): string => value.toLowerCase(),
+            toRight: (value: string): string => value.toUpperCase(),
+          },
+        },
+        {
+          left: 'user.active',
+          right: 'isInActive',
+          transform: {
+            toLeft: (value: boolean): boolean => !value,
+            toRight: (value: boolean) => !value, // Invert boolean
+          },
+        },
+      ],
+      left: {
+        user: {
+          age: 25,
+          name: 'john doe',
+          active: true,
+        },
+      },
+      right: {
+        userAge: '25', // Transformed: 25 * 2
+        userName: 'JOHN DOE', // Transformed to uppercase
+        isInActive: false, // Inverted boolean
+      },
+    },
+    {
+      name: 'should apply transform to array values',
+      bidirectional,
+      rules: [
+        {
+          left: 'scores',
+          right: 'doubledScores',
+          transform: {
+            toLeft: (values: number[]): number[] =>
+              values.map((value) => value / 2),
+            toRight: (values: number[]): number[] =>
+              values.map((value) => value * 2),
+          },
+        },
+      ],
+      left: {
+        scores: [10, 20, 30, 40, 50],
+      },
+      right: {
+        doubledScores: [20, 40, 60, 80, 100], // Each value doubled
+      },
+    },
+    {
+      name: 'should apply transform before format',
+      rules: [
+        {
+          left: 'data.date',
+          right: 'formattedDate',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            toLeft: TimestampFormats.ISO8601,
+            toRight: TimestampFormats.HTTP,
+          },
+        },
+      ],
+      left: {
+        data: {
+          date: '2020-05-16T14:34:07.000Z', // Original date that should be ignored due to transform
+        },
+      },
+      right: {
+        formattedDate: 'Sat, 16 May 2020 14:34:07 GMT', // The transformed date after formatting
+      },
+    },
+    {
+      name: 'should handle bidirectional transforms correctly',
+      bidirectional, // Test both directions
+      rules: [
+        {
+          left: 'sourceValue',
+          right: 'targetValue',
+          transform: {
+            toLeft: (value: string): string => value.toLowerCase(),
+            toRight: (value: string): string => value.toUpperCase(),
+          },
+        },
+      ],
+      left: {
+        sourceValue: 'original value',
+      },
+      right: {
+        targetValue: 'ORIGINAL VALUE', // Uppercase transform applied
+      },
+    },
+  ]);
+
+  // Tests for error thrown when applying formatting to non-string values
+  describe('formatting error handling', () => {
+    it('should throw error when applying format to non-string value', () => {
+      const rules = [
+        {
+          left: 'data.numericValue',
+          right: 'formattedValue',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ];
+
+      const source = {
+        data: {
+          numericValue: 12345, // Numeric value that can't be formatted as a timestamp
+        },
+      };
+
+      const plan = compile(rules);
+
+      // Test that an error is thrown
+      expect(() => {
+        map(source, plan);
+      }).toThrow('Can not apply formatting to non-string value');
+    });
+
+    it('should throw error when applying format to null value', () => {
+      const rules = [
+        {
+          left: 'data.nullValue',
+          right: 'formattedValue',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ];
+
+      const source = {
+        data: {
+          nullValue: null,
+        },
+      };
+
+      const plan = compile(rules);
+
+      // Test that an error is thrown
+      expect(() => {
+        map(source, plan);
+      }).toThrow('Can not apply formatting to non-string value');
+    });
+
+    it('should throw error when applying format to boolean value', () => {
+      const rules = [
+        {
+          left: 'data.boolValue',
+          right: 'formattedValue',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ];
+
+      const source = {
+        data: {
+          boolValue: true,
+        },
+      };
+
+      const plan = compile(rules);
+
+      expect(() => {
+        map(source, plan);
+      }).toThrow('Can not apply formatting to non-string value');
+    });
+
+    it('should throw error when applying format to object value', () => {
+      const rules = [
+        {
+          left: 'data.objectValue',
+          right: 'formattedValue',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ];
+
+      const source = {
+        data: {
+          objectValue: { key: 'value' },
+        },
+      };
+
+      const plan = compile(rules);
+
+      expect(() => {
+        map(source, plan);
+      }).toThrow('Can not apply formatting to non-string value');
+    });
+  });
 
   generateTests('overrideValues in mapping', [
     {

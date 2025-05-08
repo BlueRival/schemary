@@ -77,11 +77,11 @@ export function map(
       formatType = rule.format.type;
 
       if (direction === MAP_DIRECTION.LeftToRight) {
-        formatSource = rule.format.left;
-        formatDestination = rule.format.right;
+        formatSource = rule.format.toLeft;
+        formatDestination = rule.format.toRight;
       } else {
-        formatSource = rule.format.right;
-        formatDestination = rule.format.left;
+        formatSource = rule.format.toRight;
+        formatDestination = rule.format.toLeft;
       }
     }
 

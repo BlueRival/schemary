@@ -47,8 +47,10 @@ describe('MappingRule', () => {
       const rule = new MappingRule({
         left: 'user.age',
         right: 'person.years',
-        leftTransform,
-        rightTransform,
+        transform: {
+          toLeft: leftTransform,
+          toRight: rightTransform,
+        },
       });
 
       expect(rule.leftPath).toBeDefined();
@@ -384,8 +386,10 @@ describe('MappingPlan', () => {
         new MappingRule({
           left: 'k.l',
           right: 'm.n',
-          leftTransform: (rightValue: string) => rightValue.split('.'),
-          rightTransform: (leftValue: string[]) => leftValue.join('.'),
+          transform: {
+            toLeft: (rightValue: string) => rightValue.split('.'),
+            toRight: (leftValue: string[]) => leftValue.join('.'),
+          },
         }),
       ];
 

@@ -64,14 +64,16 @@ const validMappingRules: RuleParams[] = [
   },
   {
     left: 'dob',
-    leftTransform: (dob: string): string => {
-      const [year, month, day] = dob.split('-');
-      return `${month}/${day}/${year}`;
-    },
     right: 'dob',
-    rightTransform: (dob: string): string => {
-      const [month, day, year] = dob.split('/');
-      return `${year}-${month}-${day}`;
+    transform: {
+      toLeft: (dob: string): string => {
+        const [year, month, day] = dob.split('-');
+        return `${month}/${day}/${year}`;
+      },
+      toRight: (dob: string): string => {
+        const [month, day, year] = dob.split('/');
+        return `${year}-${month}-${day}`;
+      },
     },
   },
   {

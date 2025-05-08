@@ -75,11 +75,12 @@ export interface MappingRuleParamsLiteralTransform<
 > {
   left: string;
 
-  leftTransform: (rightValue: RightValueType) => LeftValueType;
-
   right: string;
 
-  rightTransform: (leftValue: LeftValueType) => RightValueType;
+  transform: {
+    toLeft: (rightValue: RightValueType) => LeftValueType;
+    toRight: (leftValue: LeftValueType) => RightValueType;
+  };
 }
 
 /**
@@ -115,8 +116,8 @@ interface MappingRuleParamsFormat {
   right: string;
   format: {
     type: MappingRuleFormatType;
-    left: string;
-    right: string;
+    toLeft: string;
+    toRight: string;
   };
 }
 
@@ -173,8 +174,8 @@ export class MappingRule<
   public readonly hasLiteral: boolean = false;
   public readonly format?: {
     type: MappingRuleFormatType;
-    left: string;
-    right: string;
+    toLeft: string;
+    toRight: string;
   };
 
   constructor(
@@ -197,10 +198,6 @@ export class MappingRule<
         const myError = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Left: ${myError.message}`);
       }
-
-      if ('leftTransform' in params) {
-        this.leftTransform = params.leftTransform;
-      }
     }
 
     if ('right' in params) {
@@ -210,10 +207,11 @@ export class MappingRule<
         const myError = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Right: ${myError.message}`);
       }
+    }
 
-      if ('rightTransform' in params) {
-        this.rightTransform = params.rightTransform;
-      }
+    if ('transform' in params) {
+      this.leftTransform = params.transform.toLeft;
+      this.rightTransform = params.transform.toRight;
     }
 
     if ('literal' in params) {

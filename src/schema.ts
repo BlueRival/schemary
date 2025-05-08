@@ -103,8 +103,6 @@ export function validate<
 >(params: JSONType, targetSchema: TargetSchema): z.infer<TargetSchema> {
   const result = targetSchema.safeParse(params);
 
-  console.log('result.data', result.data);
-
   if (result.success) {
     if (_isZodArray(targetSchema)) {
       // the safe parse call above ensures this is valid
