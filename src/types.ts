@@ -65,8 +65,8 @@ export type JSONObjectArray = z.infer<typeof JSONObjectArraySchema>;
 // Any JSON that the root is an array. Array can be any JSON type values, including primitives
 export type JSONArray = z.infer<typeof JSONArraySchema>;
 
-// Different from JSONType, JSONAny is a union of JSONArray, JSONObject and JSONObjectArray.
-// Essentially, this type requires the root to be an Object or Array
+// Different from JSONType, JSONAny is a union of non-primitive JSON bases: JSONArray, JSONObject and JSONObjectArray.
+// Essentially, this type requires the root to be an Object or Array, not a primitive
 export type JSONAny = z.infer<typeof JSONAnySchema>;
 
 // allows dynamic partials for defaults and overrides

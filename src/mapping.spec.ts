@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import {
-  compile,
-  MappingPlan,
-  MappingPlanRuleOrder,
-  MappingRuleParams,
-} from './mapping.js';
+import { compilePlan, Plan, PlanRuleOrder, RuleParams } from './mapping.js';
 
 // Define test schemas for left and right sides
 const LeftObjectSchema = z.object({
@@ -58,7 +53,7 @@ const validRightObject: RightObjectType = {
   extraInfo: 'Additional information',
 };
 
-const validMappingRules: MappingRuleParams[] = [
+const validMappingRules: RuleParams[] = [
   {
     left: 'id',
     right: 'identifier',
@@ -95,29 +90,32 @@ const validMappingRules: MappingRuleParams[] = [
 
 describe('MappingPlan', () => {
   it('should compile mapping rules to a plan object', () => {
-    const plan = compile(validMappingRules, {
+    const plan = compilePlan({
+      rules: validMappingRules,
       leftSchema: LeftObjectSchema,
       rightSchema: RightObjectSchema,
     });
 
-    expect(plan).toBeInstanceOf(MappingPlan);
+    expect(plan).toBeInstanceOf(Plan);
   });
 
   it('should compile mapping rules to a plan object with order params', () => {
-    const plan = compile(validMappingRules, {
+    const plan = compilePlan({
+      rules: validMappingRules,
       leftSchema: LeftObjectSchema,
       rightSchema: RightObjectSchema,
       order: {
-        toRight: MappingPlanRuleOrder.DESC,
-        toLeft: MappingPlanRuleOrder.DESC,
+        toRight: PlanRuleOrder.DESC,
+        toLeft: PlanRuleOrder.DESC,
       },
     });
 
-    expect(plan).toBeInstanceOf(MappingPlan);
+    expect(plan).toBeInstanceOf(Plan);
   });
 
   it('should process left to right transforms', () => {
-    const plan = compile(validMappingRules, {
+    const plan = compilePlan({
+      rules: validMappingRules,
       leftSchema: LeftObjectSchema,
       rightSchema: RightObjectSchema,
     });
@@ -130,7 +128,8 @@ describe('MappingPlan', () => {
   });
 
   it('should process right to left transforms', () => {
-    const plan = compile(validMappingRules, {
+    const plan = compilePlan({
+      rules: validMappingRules,
       leftSchema: LeftObjectSchema,
       rightSchema: RightObjectSchema,
     });

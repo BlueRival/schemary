@@ -29,7 +29,9 @@
     "validation",
     "mapping",
     "zod",
-    "typescript"
+    "typescript",
+    "dates",
+    "timestamps"
   ],
   "author": "BlueRival",
   "license": "MIT",

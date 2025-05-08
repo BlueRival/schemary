@@ -114,7 +114,7 @@ export function _isPrimitive(value: unknown): value is Primitive {
  * We loop through the union manually because targetSchema.strip() doesn't exist
  * on union types.
  */
-function _convertUnion<
+function _shiftUnion<
   UnionTargetTypes extends JSONObject,
   TargetSchema extends ZodUnionSchemaDef<UnionTargetTypes>,
 >(sourceObj: JSONObject, targetSchema: TargetSchema): z.infer<TargetSchema> {
@@ -148,7 +148,7 @@ function _convertUnion<
  * We loop through the union manually because targetSchema.strip() doesn't exist
  * on union types.
  */
-function _convertDiscriminatedUnion<
+function _shiftDiscriminatedUnion<
   DUnionTargetTypes extends JSONObject,
   TargetSchema extends ZodDiscriminatedUnionDef<DUnionTargetTypes>,
 >(sourceObj: JSONObject, targetSchema: TargetSchema): DUnionTargetTypes {
@@ -182,7 +182,7 @@ function _convertDiscriminatedUnion<
  *
  * For normal objects, this function is just a wrapper around parse()
  */
-function _convertObject<
+function _shiftObject<
   ObjectTargetType extends JSONObject,
   TargetSchema extends ZodObjectSchemaDef<ObjectTargetType>,
 >(sourceObj: JSONObject, targetSchema: TargetSchema): z.infer<TargetSchema> {
@@ -202,7 +202,7 @@ function _convertObject<
  *
  * ...Lazy objects are often typed with ZodType<Type> since infer<> doesn't work.
  */
-function _convertLazyObject<
+function _shiftLazyObject<
   ObjectTargetType extends JSONObject,
   TargetSchema extends ZodLazyObjectSchemaDef<ObjectTargetType>,
 >(sourceObj: JSONObject, targetSchema: TargetSchema): ObjectTargetType {
@@ -215,11 +215,11 @@ function _convertLazyObject<
   const unwrappedSchema =
     scopedSchema.schema as ZodObjectSchemaDef<ObjectTargetType>;
 
-  // Use the _convertObject function with the unwrapped schema
-  return _convertObject(sourceObj, unwrappedSchema);
+  // Use the _shiftObject function with the unwrapped schema
+  return _shiftObject(sourceObj, unwrappedSchema);
 }
 
-export function _convert<
+export function _shift<
   TargetType extends JSONObject, // TargetType is the object/element type
   TargetSchema extends InputObjectSchema<TargetType>,
 >(
@@ -234,12 +234,12 @@ export function _convert<
 
   if (_isZodUnion(targetSchema)) {
     // _isZodUnion validates the schema type cast
-    return _convertUnion(merged, targetSchema as ZodUnionSchemaDef<TargetType>);
+    return _shiftUnion(merged, targetSchema as ZodUnionSchemaDef<TargetType>);
   }
 
   if (_isZodDiscriminatedUnion(targetSchema)) {
     // _isZodDiscriminatedUnion validates the schema type cast
-    return _convertDiscriminatedUnion(
+    return _shiftDiscriminatedUnion(
       merged,
       targetSchema as ZodDiscriminatedUnionDef<TargetType>,
     );
@@ -247,15 +247,12 @@ export function _convert<
 
   if (_isZodObject(targetSchema)) {
     // _isZodObject validates the schema type cast
-    return _convertObject(
-      merged,
-      targetSchema as ZodObjectSchemaDef<TargetType>,
-    );
+    return _shiftObject(merged, targetSchema as ZodObjectSchemaDef<TargetType>);
   }
 
   if (_isZodLazyObject(targetSchema)) {
     // _isZodLazyObject validates the schema type cast
-    return _convertLazyObject(
+    return _shiftLazyObject(
       merged,
       targetSchema as ZodLazyObjectSchemaDef<TargetType>,
     );

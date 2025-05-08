@@ -1,9 +1,6 @@
 import { z } from 'zod';
-import { FormatShortNames } from './formatters/timestamp.js';
 
-export { MappingPlanRuleOrder } from './mapping/plan.js';
-
-export type TimeStampFormats = FormatShortNames;
+export { MappingPlanRuleOrder as PlanRuleOrder } from './mapping/plan.js';
 
 import {
   MappingPlan as MappingPlanCore,
@@ -22,13 +19,14 @@ import { InputArraySchema, InputObjectSchema, Overrides } from './types.js';
 
 type MappingSchema<T> = InputObjectSchema<T> | InputArraySchema<T>;
 
-export interface MappingPlanParams<L extends JSONType, R extends JSONType>
+export interface PlanParams<L extends JSONType, R extends JSONType>
   extends MappingPlanParamsCore {
+  rules: RuleParams[];
   leftSchema: MappingSchema<L>;
   rightSchema: MappingSchema<R>;
 }
 
-export class MappingPlan<
+export class Plan<
   LeftSchema extends InputObjectSchema<LO> | InputArraySchema<LA>,
   RightSchema extends InputObjectSchema<RO> | InputArraySchema<RA>,
   LO extends JSONType = JSONType,
@@ -75,20 +73,17 @@ export class MappingPlan<
   }
 }
 
-export type MappingRuleParams = MappingRuleParamsCore<any, any>;
+export type RuleParams = MappingRuleParamsCore<any, any>;
 
-export function compile<
+export function compilePlan<
   L extends JSONType,
   R extends JSONType,
   LeftSchema extends MappingSchema<L>,
   RightSchema extends MappingSchema<R>,
->(
-  rules: MappingRuleParams[],
-  params: MappingPlanParams<L, R>,
-): MappingPlan<LeftSchema, RightSchema, L, L, R, R> {
-  const core = compileCore(rules, params);
+>(params: PlanParams<L, R>): Plan<LeftSchema, RightSchema, L, L, R, R> {
+  const core = compileCore(params.rules, params);
 
-  return new MappingPlan(
+  return new Plan(
     core,
     params.leftSchema as LeftSchema,
     params.rightSchema as RightSchema,
