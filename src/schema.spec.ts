@@ -107,7 +107,7 @@ function testTypeTwoObject(
 }
 
 describe('Schema', () => {
-  describe('convert()', () => {
+  describe('shift()', () => {
     it('should throw an error if source is a primitive value', () => {
       const primitiveValues = [
         'string value',
@@ -209,7 +209,7 @@ describe('Schema', () => {
       });
     });
 
-    it('should correctly convert a record', () => {
+    it('should correctly shift a record', () => {
       const source = {
         person: { name: 'Alice', age: 25 },
         dog: { name: 'Fido', age: 3 },
@@ -231,7 +231,7 @@ describe('Schema', () => {
       expect(result).toEqual(source);
     });
 
-    it('should correctly convert an object by merging defaults and validating with schema', () => {
+    it('should correctly shift an object by merging defaults and validating with schema', () => {
       const source = { name: 'Alice', age: 25 };
       const targetSchema = z.object({
         name: z.string(),
@@ -243,6 +243,55 @@ describe('Schema', () => {
       const result = shift(source, targetSchema, override);
 
       expect(result).toEqual({ name: 'Alice', age: 25, country: 'USA' });
+    });
+
+    it('should ensure that modifying the returned object does not modify source or overrides', () => {
+      // Test with simple object
+      const source = {
+        name: 'Alice',
+        meta: { age: 25, country: 'CA' },
+        address: {
+          street: '123 Main',
+        },
+      };
+      const originalSourceCopy = clone(source);
+
+      const targetSchema = z.object({
+        name: z.string(),
+        meta: z.object({
+          age: z.number(),
+          country: z.string().default('Unknown'),
+        }),
+        address: z.object({
+          street: z.string(),
+        }),
+      });
+
+      const overrides = { meta: { age: 36, country: 'USA' } };
+      const originalOverridesCopy = { ...overrides };
+
+      const result = shift(source, targetSchema, overrides);
+
+      expect(result).toStrictEqual({
+        name: 'Alice',
+        meta: {
+          age: 36,
+          country: 'USA',
+        },
+        address: {
+          street: '123 Main',
+        },
+      });
+
+      // Modify the returned object
+      result.name = 'Modified';
+      result.meta.age = 100;
+      result.meta.country = 'Modified';
+      result.address.street = 'Modified';
+
+      // Verify source and overrides are unchanged
+      expect(source).toStrictEqual(originalSourceCopy);
+      expect(overrides).toStrictEqual(originalOverridesCopy);
     });
 
     it('should allow optional target defaults', () => {
@@ -308,7 +357,7 @@ describe('Schema', () => {
       expect(result).toEqual({ name: 'Alice', age: 25 });
     });
 
-    it('should correctly convert an array of objects using an array schema', () => {
+    it('should correctly shift an array of objects using an array schema', () => {
       // Define a schema for the array elements
       const personSchema = z.object({
         name: z.string(),
@@ -352,84 +401,120 @@ describe('Schema', () => {
       expect(result).not.toBe(sourceArray);
     });
 
-    describe('Conversion between two different schemas', () => {
-      it('should correctly convert from Schema A to Schema B', () => {
-        // Schema A has fields: one, two, three.
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const schemaA = z.object({
-          one: z.string(),
-          two: z.number(),
-          three: z.boolean(),
-        });
-        // Schema B has fields: two, three, four.
-        const schemaB = z.object({
-          two: z.number(),
-          three: z.boolean(),
-          four: z.string(),
-        });
-        type AType = z.infer<typeof schemaA>;
-        type BType = z.infer<typeof schemaB>;
-
-        const aInstance: AType = {
-          one: 'Value for one',
-          two: 10,
-          three: true,
-        };
-        const defaultsForB = { four: 'Default Four' };
-
-        const result: BType = shift(aInstance, schemaB, defaultsForB);
-        expect(result).toEqual({ two: 10, three: true, four: 'Default Four' });
+    it('should ensure that modifying array results does not modify source array or overrides', () => {
+      // Define a schema for the array elements
+      const personSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+        active: z.boolean().optional(),
+        details: z
+          .object({
+            address: z.string().optional(),
+            phone: z.string().optional(),
+          })
+          .optional(),
       });
 
-      it('should correctly convert from Schema B to Schema A', () => {
-        // Schema A has fields: one, two, three.
-        const schemaA = z.object({
-          one: z.string(),
-          two: z.number(),
-          three: z.boolean(),
-        });
-        // Schema B has fields: two, three, four.
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const schemaB = z.object({
-          two: z.number(),
-          three: z.boolean(),
-          four: z.string(),
-        });
-        type AType = z.infer<typeof schemaA>;
-        type BType = z.infer<typeof schemaB>;
+      // Create an array schema
+      const peopleArraySchema = z.array(personSchema);
 
-        const bInstance: BType = {
-          two: 20,
-          three: false,
-          four: 'Not used',
-        };
-        const overridesForA = { one: 'Default One' };
+      // Source array with nested objects
+      const sourceArray = [
+        { name: 'Alice', age: 25, details: { address: '123 Main St' } },
+        { name: 'Bob', age: 30, active: true },
+        { name: 'Charlie', age: 35, active: false },
+      ];
 
-        const result: AType = shift(bInstance, schemaA, overridesForA);
-        expect(result).toEqual({ one: 'Default One', two: 20, three: false });
+      // Create a deep copy of the source array for comparison
+      const originalSourceCopy = clone(sourceArray);
+
+      // Define overrides with nested properties
+      const overrides = {
+        active: true,
+        details: { phone: '555-1234' },
+      };
+
+      // Create a deep copy of the overrides for comparison
+      const originalOverridesCopy = clone(overrides);
+
+      // Convert the array
+      const result = shift(sourceArray, peopleArraySchema, overrides);
+
+      // Make deep modifications to the results
+      result[0].name = 'Modified Alice';
+      result[0].age = 26;
+      if (result[0].details) {
+        result[0].details.address = 'New Address';
+        result[0].details.phone = 'New Phone';
+      }
+
+      result[1].name = 'Modified Bob';
+      result[1].active = false;
+
+      result[2].name = 'Modified Charlie';
+      result[2].active = false;
+
+      // Add a new property to the first result's details
+      if (result[0].details) {
+        // @ts-expect-error - Adding property not in schema for test
+        result[0].details.newProperty = 'should not affect source';
+      }
+
+      // Verify source array remains unchanged
+      expect(sourceArray).toEqual(originalSourceCopy);
+
+      // Verify overrides object remains unchanged
+      expect(overrides).toEqual(originalOverridesCopy);
+    });
+
+    it('should correctly shift from Schema A to Schema B', () => {
+      // Schema A has fields: one, two, three.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const schemaA = z.object({
+        one: z.string(),
+        two: z.number(),
+        three: z.boolean(),
+      });
+      // Schema B has fields: two, three, four.
+      const schemaB = z.object({
+        two: z.number(),
+        three: z.boolean(),
+        four: z.string(),
+      });
+      type AType = z.infer<typeof schemaA>;
+      type BType = z.infer<typeof schemaB>;
+
+      const aInstance: AType = {
+        one: 'Value for one',
+        two: 10,
+        three: true,
+      };
+      const defaultsForB = { four: 'Default Four' };
+
+      const result: BType = shift(aInstance, schemaB, defaultsForB);
+      expect(result).toEqual({ two: 10, three: true, four: 'Default Four' });
+    });
+
+    it('should throw an error with array source and object target', () => {
+      const source = [{ some: 'object' }];
+      const schema = z.object({
+        some: z.string(),
       });
 
-      it('should throw an error with array source and object target', () => {
-        const source = [{ some: 'object' }];
-        const schema = z.object({
-          some: z.string(),
-        });
-
-        try {
-          shift(source, schema);
+      try {
+        shift(source, schema);
+        // If we reach this point, the test should fail
+        expect('this should not be reached').toBe('test failed');
+      } catch (error) {
+        if (error instanceof Error) {
+          expect(error.message).toStrictEqual(
+            'target schema is not an array type but source is an array',
+          );
+        } else {
           // If we reach this point, the test should fail
-          expect('this should not be reached').toBe('test failed');
-        } catch (error) {
-          if (error instanceof Error) {
-            expect(error.message).toStrictEqual(
-              'target schema is not an array type but source is an array',
-            );
-          } else {
-            // If we reach this point, the test should fail
-            expect('wrong error type').toBe('test failed');
-          }
+          expect('wrong error type').toBe('test failed');
         }
-      });
+      }
     });
 
     it('should throw an error with object source and array target', () => {
@@ -496,7 +581,7 @@ describe('Schema', () => {
         testTypeOneObject(result[5], 'Earth', true);
       }
 
-      it('should correctly convert with discriminated union schema', () => {
+      it('should correctly shift with discriminated union schema', () => {
         // Define a discriminated union schema
         const usersSchema = z.discriminatedUnion('type', [
           TypeOneSchema,
@@ -507,7 +592,7 @@ describe('Schema', () => {
         testArray(usersSchema);
       });
 
-      it('should correctly convert with regular union schema', () => {
+      it('should correctly shift with regular union schema', () => {
         // Define a regular union schema
         const usersSchema = z.union([TypeOneSchema, TypeTwoSchema]);
 
@@ -549,7 +634,7 @@ describe('Schema', () => {
           accessLevel: 10,
         };
 
-        // Attempt to convert should throw a Error
+        // Attempt to shift should throw a Error
         expect(() => shift(nonPrimitiveDiscriminator, usersSchema)).toThrow(
           'discriminator value must be a primitive',
         );
@@ -614,7 +699,7 @@ describe('Schema', () => {
         });
       });
 
-      it('should correctly convert with discriminated union schema in array elements', () => {
+      it('should correctly shift with discriminated union schema in array elements', () => {
         // Define a discriminated union schema
         const usersSchema = z.discriminatedUnion('type', [
           TypeOneSchema,
@@ -671,7 +756,7 @@ describe('Schema', () => {
         }
       });
 
-      it('should correctly identify and convert discriminated union with non-array input', () => {
+      it('should correctly identify and shift discriminated union with non-array input', () => {
         // Define a discriminated union schema
         const usersSchema = z.discriminatedUnion('type', [
           TypeOneSchema,
@@ -711,7 +796,7 @@ describe('Schema', () => {
         testTypeTwoObject(userResult, 'Home', false);
       });
 
-      it('should correctly convert array elements with regular union schema', () => {
+      it('should correctly shift array elements with regular union schema', () => {
         // Define a regular union schema
         const usersSchema = z.union([TypeOneSchema, TypeTwoSchema]);
 
@@ -1425,6 +1510,98 @@ describe('Schema', () => {
       const result = extract(obj, 'users.1.name', z.string());
       expect(result).toBe('Bob');
     });
+
+    it('should ensure modifying the returned object does not modify the source object', () => {
+      // Test with a deeply nested object
+      const obj = {
+        config: {
+          server: {
+            settings: {
+              port: 3000,
+              host: 'localhost',
+              options: {
+                timeout: 5000,
+                secure: true,
+              },
+            },
+          },
+        },
+      };
+
+      // Create a deep copy of the original object for comparison
+      const originalObj = clone(obj);
+
+      // Define a schema for the extracted part
+      const serverSettingsSchema = z.object({
+        port: z.number(),
+        host: z.string(),
+        options: z.object({
+          timeout: z.number(),
+          secure: z.boolean(),
+        }),
+      });
+
+      // Extract the server settings
+      const result = extract(
+        obj,
+        'config.server.settings',
+        serverSettingsSchema,
+      );
+
+      // Make deep modifications to the result
+      result.port = 8080;
+      result.host = 'modified-host';
+      result.options.timeout = 10000;
+      result.options.secure = false;
+
+      // Verify the source object remains unchanged
+      expect(obj).toEqual(originalObj);
+
+      // Test with a nested array
+      const arrayObj = {
+        data: {
+          items: [
+            { id: 1, name: 'Item 1', tags: ['tag1', 'tag2'] },
+            {
+              id: 2,
+              name: 'Item 2',
+              tags: ['tag3', 'tag4'],
+              metadata: { created: '2023-01-01' },
+            },
+          ],
+        },
+      };
+
+      // Create a deep copy of the original array object
+      const originalArrayObj = clone(arrayObj);
+
+      // Define a schema for the array item
+      const itemSchema = z.object({
+        id: z.number(),
+        name: z.string(),
+        tags: z.array(z.string()),
+        metadata: z
+          .object({
+            created: z.string(),
+          })
+          .optional(),
+      });
+
+      // Extract the second item from the array
+      const arrayResult = extract(arrayObj, 'data.items.1', itemSchema);
+
+      // Make deep modifications to the result
+      arrayResult.id = 999;
+      arrayResult.name = 'Modified Item';
+      arrayResult.tags.push('new-tag');
+      arrayResult.tags[0] = 'modified-tag';
+      if (arrayResult.metadata) {
+        arrayResult.metadata.created = 'modified-date';
+      }
+
+      // Verify the source object remains unchanged
+      expect(arrayObj).toEqual(originalArrayObj);
+    });
   });
 
   describe('extract() with union types', () => {
@@ -1749,11 +1926,110 @@ describe('Schema', () => {
         }
       }
     });
+
+    it('should ensure modifying the returned object does not modify the source object', () => {
+      // Test with a deeply nested object
+      const params = {
+        user: {
+          profile: {
+            name: 'Test User',
+            age: 30,
+            preferences: {
+              theme: 'dark',
+              notifications: true,
+              categories: ['tech', 'science'],
+            },
+          },
+          settings: {
+            language: 'en',
+            timezone: 'UTC',
+          },
+        },
+        features: ['feature1', 'feature2', 'feature3'],
+      };
+
+      // Create a deep copy of the original object for comparison
+      const originalParams = clone(params);
+
+      // Define a complex schema with nested objects and arrays
+      const schema = z.object({
+        user: z.object({
+          profile: z.object({
+            name: z.string(),
+            age: z.number(),
+            preferences: z.object({
+              theme: z.string(),
+              notifications: z.boolean(),
+              categories: z.array(z.string()),
+            }),
+          }),
+          settings: z.object({
+            language: z.string(),
+            timezone: z.string(),
+          }),
+        }),
+        features: z.array(z.string()),
+      });
+
+      // Validate the parameters
+      const result = validate(params, schema);
+
+      // Make deep modifications to the result
+      result.user.profile.name = 'Modified User';
+      result.user.profile.age = 99;
+      result.user.profile.preferences.theme = 'light';
+      result.user.profile.preferences.notifications = false;
+      result.user.profile.preferences.categories.push('modified');
+      result.user.profile.preferences.categories[0] = 'changed';
+      result.user.settings.language = 'fr';
+      result.features.push('newFeature');
+      result.features[0] = 'modifiedFeature';
+
+      // Verify the source object remains unchanged
+      expect(params).toEqual(originalParams);
+
+      // Test with array of objects
+      const arrayParams = [
+        { id: 1, data: { value: 'test1', nested: { flag: true } } },
+        { id: 2, data: { value: 'test2', nested: { flag: false } } },
+      ];
+
+      // Create a deep copy of the original array for comparison
+      const originalArrayParams = clone(arrayParams);
+
+      // Define a schema for the array
+      const arraySchema = z.array(
+        z.object({
+          id: z.number(),
+          data: z.object({
+            value: z.string(),
+            nested: z.object({
+              flag: z.boolean(),
+            }),
+          }),
+        }),
+      );
+
+      // Validate the array
+      const arrayResult = validate(arrayParams, arraySchema);
+
+      // Make deep modifications to the array result
+      arrayResult[0].id = 99;
+      arrayResult[0].data.value = 'modified';
+      arrayResult[0].data.nested.flag = false;
+      arrayResult.push({
+        id: 3,
+        data: { value: 'new', nested: { flag: true } },
+      });
+
+      // Verify the source array remains unchanged
+      expect(arrayParams).toEqual(originalArrayParams);
+    });
   });
 
   describe('Testing edge cases for schema helpers', () => {
     it('should throw an error when using an unsupported schema type', () => {
-      // Create a mock schema that's not supported by _convert
+      // Create a mock schema that's not supported by _shift
       const mockSchema = {} as z.ZodType<any>;
       // Modify it to pass the type checks but not match any of the supported types
       Object.setPrototypeOf(mockSchema, z.ZodType.prototype);
@@ -1792,7 +2068,7 @@ describe('Schema', () => {
     });
 
     it('should throw an error when a schema looks like a lazy schema but is not a ZodLazy instance', () => {
-      // First we need to force the convert function to try to handle our schema as a lazy schema
+      // First we need to force the shift function to try to handle our schema as a lazy schema
       // by making it pass the other schema type checks but fail the lazy schema check
 
       // Create a mock ZodLazy-like schema
@@ -1800,12 +2076,12 @@ describe('Schema', () => {
       Object.setPrototypeOf(fakeLazySchema, z.ZodType.prototype);
 
       // Mock _isZodObject, _isZodUnion, _isZodDiscriminatedUnion to return false
-      // but make _isZodLazyObject return true to force it to try _convertLazyObject
+      // but make _isZodLazyObject return true to force it to try _shiftLazyObject
       const source = { value: 'test' };
 
       // Since we can't directly modify the internal helper functions, we need to
       // create a special test case that is designed to bypass other checks
-      // and force the code into the _convertLazyObject path
+      // and force the code into the _shiftLazyObject path
 
       // Using a real ZodLazy but corrupting it to fail the instanceof check
       const realLazy = z.lazy(() =>
@@ -1850,7 +2126,7 @@ describe('Schema', () => {
       );
     });
 
-    it('should convert using a lazy schema that resolves to an object schema', () => {
+    it('should shift using a lazy schema that resolves to an object schema', () => {
       // Define a properly formed lazy schema that resolves to an object schema
 
       // @ts-expect-error testing circular dependency

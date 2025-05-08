@@ -155,6 +155,7 @@ export function clone<T extends JSONType>(input: T): T {
     throw new Error('clone only supports JSON types');
   }
 
+  // one day, we will optimize, maybe, its probably fine
   return JSON.parse(JSON.stringify(input)) as T;
 }
 
