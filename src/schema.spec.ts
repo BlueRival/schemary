@@ -1511,7 +1511,7 @@ describe('Schema', () => {
       expect(result).toBe('Bob');
     });
 
-    it('should ensure modifying the returned object does not modify the source object', () => {
+    it('should ensure modifying the returned object does not modify the source object or defaults/overrides', () => {
       // Test with a deeply nested object
       const obj = {
         config: {
@@ -1531,6 +1531,30 @@ describe('Schema', () => {
       // Create a deep copy of the original object for comparison
       const originalObj = clone(obj);
 
+      // Define defaults and overrides with deeply nested structures
+      const defaults = {
+        port: 8080,
+        host: 'default-host',
+        options: {
+          timeout: 10000,
+          secure: false,
+          extraOption: 'default-value',
+        },
+      };
+
+      const overrides = {
+        host: 'override-host',
+        options: {
+          timeout: 30000,
+          secure: true,
+          extraOption: 'override-value',
+        },
+      };
+
+      // Create deep copies for comparison
+      const originalDefaults = clone(defaults);
+      const originalOverrides = clone(overrides);
+
       // Define a schema for the extracted part
       const serverSettingsSchema = z.object({
         port: z.number(),
@@ -1538,69 +1562,89 @@ describe('Schema', () => {
         options: z.object({
           timeout: z.number(),
           secure: z.boolean(),
+          extraOption: z.string().optional(),
         }),
       });
 
-      // Extract the server settings
+      // Extract the server settings with both defaults and overrides
       const result = extract(
         obj,
         'config.server.settings',
         serverSettingsSchema,
+        {
+          defaults,
+          overrides,
+        },
       );
 
       // Make deep modifications to the result
-      result.port = 8080;
+      result.port = 9999;
       result.host = 'modified-host';
-      result.options.timeout = 10000;
-      result.options.secure = false;
+      result.options.timeout = 20000;
+      result.options.secure = !result.options.secure;
+      if (result.options.extraOption) {
+        result.options.extraOption = 'modified-value';
+      }
+
+      // Add a new property to the options object
+      // @ts-expect-error - Adding property not in schema for test
+      result.options.newProperty = 'should not affect any input objects';
 
       // Verify the source object remains unchanged
       expect(obj).toEqual(originalObj);
 
-      // Test with a nested array
+      // Verify defaults and overrides remain unchanged
+      expect(defaults).toEqual(originalDefaults);
+      expect(overrides).toEqual(originalOverrides);
+
+      // Test with arrays
       const arrayObj = {
-        data: {
-          items: [
-            { id: 1, name: 'Item 1', tags: ['tag1', 'tag2'] },
-            {
-              id: 2,
-              name: 'Item 2',
-              tags: ['tag3', 'tag4'],
-              metadata: { created: '2023-01-01' },
-            },
-          ],
-        },
+        users: [
+          { id: 1, name: 'User 1', settings: { active: true } },
+          { id: 2, name: 'User 2', settings: { active: false } },
+        ],
       };
 
-      // Create a deep copy of the original array object
-      const originalArrayObj = clone(arrayObj);
+      const arrayDefaults = {
+        id: 100,
+        settings: { active: true, theme: 'light' },
+      };
 
-      // Define a schema for the array item
-      const itemSchema = z.object({
+      const arrayOverrides = {
+        name: 'Override Name',
+        settings: { active: true, theme: 'dark' },
+      };
+
+      const originalArrayObj = clone(arrayObj);
+      const originalArrayDefaults = clone(arrayDefaults);
+      const originalArrayOverrides = clone(arrayOverrides);
+
+      const userSchema = z.object({
         id: z.number(),
         name: z.string(),
-        tags: z.array(z.string()),
-        metadata: z
-          .object({
-            created: z.string(),
-          })
-          .optional(),
+        settings: z.object({
+          active: z.boolean(),
+          theme: z.string().optional(),
+        }),
       });
 
-      // Extract the second item from the array
-      const arrayResult = extract(arrayObj, 'data.items.1', itemSchema);
+      const arrayResult = extract(arrayObj, 'users.1', userSchema, {
+        defaults: arrayDefaults,
+        overrides: arrayOverrides,
+      });
 
-      // Make deep modifications to the result
+      // Make modifications to the result
       arrayResult.id = 999;
-      arrayResult.name = 'Modified Item';
-      arrayResult.tags.push('new-tag');
-      arrayResult.tags[0] = 'modified-tag';
-      if (arrayResult.metadata) {
-        arrayResult.metadata.created = 'modified-date';
+      arrayResult.name = 'Modified Name';
+      arrayResult.settings.active = !arrayResult.settings.active;
+      if (arrayResult.settings.theme) {
+        arrayResult.settings.theme = 'modified-theme';
       }
 
-      // Verify the source object remains unchanged
+      // Verify all source objects remain unchanged
       expect(arrayObj).toEqual(originalArrayObj);
+      expect(arrayDefaults).toEqual(originalArrayDefaults);
+      expect(arrayOverrides).toEqual(originalArrayOverrides);
     });
   });
 
@@ -1927,103 +1971,106 @@ describe('Schema', () => {
       }
     });
 
-    it('should ensure modifying the returned object does not modify the source object', () => {
-      // Test with a deeply nested object
+    it('should ensure modifying the returned object does not modify the source object for schemas with defaults', () => {
+      // Test with a schema that has default values
       const params = {
-        user: {
-          profile: {
-            name: 'Test User',
-            age: 30,
-            preferences: {
-              theme: 'dark',
-              notifications: true,
-              categories: ['tech', 'science'],
-            },
-          },
-          settings: {
-            language: 'en',
-            timezone: 'UTC',
-          },
+        item: {
+          title: 'Test Item',
+          // 'description' and 'status' fields have default values in the schema
         },
-        features: ['feature1', 'feature2', 'feature3'],
       };
 
       // Create a deep copy of the original object for comparison
       const originalParams = clone(params);
 
-      // Define a complex schema with nested objects and arrays
       const schema = z.object({
-        user: z.object({
-          profile: z.object({
-            name: z.string(),
-            age: z.number(),
-            preferences: z.object({
-              theme: z.string(),
-              notifications: z.boolean(),
-              categories: z.array(z.string()),
-            }),
-          }),
-          settings: z.object({
-            language: z.string(),
-            timezone: z.string(),
-          }),
+        item: z.object({
+          title: z.string(),
+          description: z.string().default('Default description'),
+          status: z.enum(['active', 'inactive']).default('active'),
+          tags: z.array(z.string()).default(() => []),
         }),
-        features: z.array(z.string()),
       });
 
-      // Validate the parameters
+      // Validate the parameters, which should add the default values
       const result = validate(params, schema);
 
+      // Verify default values were added
+      expect(result.item.description).toBe('Default description');
+      expect(result.item.status).toBe('active');
+      expect(result.item.tags).toEqual([]);
+
       // Make deep modifications to the result
-      result.user.profile.name = 'Modified User';
-      result.user.profile.age = 99;
-      result.user.profile.preferences.theme = 'light';
-      result.user.profile.preferences.notifications = false;
-      result.user.profile.preferences.categories.push('modified');
-      result.user.profile.preferences.categories[0] = 'changed';
-      result.user.settings.language = 'fr';
-      result.features.push('newFeature');
-      result.features[0] = 'modifiedFeature';
+      result.item.title = 'Modified Title';
+      result.item.description = 'Modified Description';
+      result.item.status = 'inactive';
+      result.item.tags.push('new-tag');
 
-      // Verify the source object remains unchanged
+      // Verify the source object remains unchanged (no default values added)
       expect(params).toEqual(originalParams);
+      expect(params.item).not.toHaveProperty('description');
+      expect(params.item).not.toHaveProperty('status');
+      expect(params.item).not.toHaveProperty('tags');
 
-      // Test with array of objects
-      const arrayParams = [
-        { id: 1, data: { value: 'test1', nested: { flag: true } } },
-        { id: 2, data: { value: 'test2', nested: { flag: false } } },
-      ];
+      // Test with a deeply nested object containing multiple defaults
+      const nestedParams = {
+        user: {
+          name: 'Test User',
+          // 'role' has a default value in the schema
+          profile: {
+            // 'bio' has a default value in the schema
+          },
+        },
+      };
 
-      // Create a deep copy of the original array for comparison
-      const originalArrayParams = clone(arrayParams);
+      const originalNestedParams = clone(nestedParams);
 
-      // Define a schema for the array
-      const arraySchema = z.array(
-        z.object({
-          id: z.number(),
-          data: z.object({
-            value: z.string(),
-            nested: z.object({
-              flag: z.boolean(),
-            }),
-          }),
-        }),
-      );
+      const nestedSchema = z
+        .object({
+          user: z
+            .object({
+              name: z.string(),
+              role: z.string().default('user'),
+              profile: z.object({
+                bio: z.string().default('No bio provided'),
+                settings: z
+                  .object({
+                    theme: z.string().default('light'),
+                    notifications: z.boolean().default(true),
+                  })
+                  .default({}),
+              }),
+            })
+            .strict(),
+        })
+        .strict();
 
-      // Validate the array
-      const arrayResult = validate(arrayParams, arraySchema);
+      // Validate, which should add all default values at multiple levels
+      const nestedResult = validate(nestedParams, nestedSchema);
 
-      // Make deep modifications to the array result
-      arrayResult[0].id = 99;
-      arrayResult[0].data.value = 'modified';
-      arrayResult[0].data.nested.flag = false;
-      arrayResult.push({
-        id: 3,
-        data: { value: 'new', nested: { flag: true } },
+      expect(nestedResult).toStrictEqual({
+        user: {
+          name: 'Test User',
+          role: 'user',
+          profile: {
+            bio: 'No bio provided',
+            settings: {
+              theme: 'light',
+              notifications: true,
+            },
+          },
+        },
       });
 
-      // Verify the source array remains unchanged
-      expect(arrayParams).toEqual(originalArrayParams);
+      // Make deep modifications
+      nestedResult.user.name = 'Modified User';
+      nestedResult.user.role = 'admin';
+      nestedResult.user.profile.bio = 'Modified bio';
+      nestedResult.user.profile.settings.theme = 'Modified theme';
+      nestedResult.user.profile.settings.notifications = false;
+
+      // Verify source object remains unchanged (no default values added)
+      expect(nestedParams).toEqual(originalNestedParams);
     });
   });
 
