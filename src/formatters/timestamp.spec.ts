@@ -408,6 +408,68 @@ const testDates: TestDatesTests[] = [
     input: 'not a date',
     parts: { H: new Error('invalid date') },
   },
+  {
+    name: 'Negative UNIX Timestamp',
+    input: '-1354556',
+    parts: {
+      http: 'Wed, 31 Dec 1969 23:37:25 GMT',
+      iso8601: '1969-12-31T23:37:25.444Z',
+      rfc2822: 'Wed, 31 Dec 1969 23:37:25 +0000',
+      sql: '1969-12-31 23:37:25.444 Z',
+      unix: '-1354556',
+    },
+  },
+  {
+    name: 'FormatShortNames mapping',
+    input: '2025-01-15T14:30:45.078',
+    parts: {
+      unix: '1736951445078',
+      iso8601: '2025-01-15T14:30:45.078Z',
+      rfc2822: 'Wed, 15 Jan 2025 14:30:45 +0000',
+      http: 'Wed, 15 Jan 2025 14:30:45 GMT',
+      sql: '2025-01-15 14:30:45.078 Z',
+    },
+  },
+  {
+    name: 'UNIX parseFormat mismatch',
+    input: 'not a number',
+    formatHint: 'unix',
+    parts: {
+      unix: new Error('date does not match format'),
+    },
+  },
+  {
+    name: 'ISO8601 parseFormat mismatch',
+    input: 'not iso',
+    formatHint: 'iso8601',
+    parts: {
+      iso8601: new Error('date does not match format'),
+    },
+  },
+  {
+    name: 'RFC2822 parseFormat mismatch',
+    input: 'not rfc',
+    formatHint: 'rfc2822',
+    parts: {
+      rfc2822: new Error('date does not match format'),
+    },
+  },
+  {
+    name: 'HTTP parseFormat mismatch',
+    input: 'not http',
+    formatHint: 'http',
+    parts: {
+      http: new Error('date does not match format'),
+    },
+  },
+  {
+    name: 'SQL parseFormat mismatch',
+    input: 'not sql',
+    formatHint: 'sql',
+    parts: {
+      sql: new Error('date does not match format'),
+    },
+  },
 ];
 
 describe('formatDate', () => {

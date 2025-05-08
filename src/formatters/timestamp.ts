@@ -123,8 +123,6 @@ function parseDateTime(
     const dtUnix: DateTime = DateTime.fromMillis(Number(input), opts);
     if (dtUnix.isValid) {
       return dtUnix;
-    } else if (parseFormat === FormatShortNames.UNIX) {
-      throw new Error('date does not match format');
     }
   } else if (parseFormat === FormatShortNames.UNIX) {
     throw new Error('date does not match format');
@@ -207,6 +205,10 @@ export function formatTimestamp(
     case `${FormatShortNames.HTTP}`:
       // we know this is valid string because parseDateTime() checks for valid or throws Error
       return dt.toHTTP() as string;
+
+    case `${FormatShortNames.SQL}`:
+      // we know this is valid string because parseDateTime() checks for valid or throws Error
+      return dt.toSQL() as string;
 
     default:
       return dt.toFormat(format);
