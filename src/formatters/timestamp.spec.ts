@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTimestamp } from './timestamp.js';
+import { format } from './timestamp.js';
 import { DateTime } from 'luxon';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -485,7 +485,7 @@ describe('formatDate', () => {
           partsExpect[formatToken] = expected.message;
 
           try {
-            formatTimestamp(input, formatToken, formatHint);
+            format(input, formatToken, formatHint);
             partsMatch[formatToken] = undefined;
           } catch (e) {
             if (e instanceof Error) {
@@ -496,7 +496,7 @@ describe('formatDate', () => {
           }
         } else {
           partsExpect[formatToken] = expected;
-          partsMatch[formatToken] = formatTimestamp(
+          partsMatch[formatToken] = format(
             input,
             formatToken,
             formatHint,

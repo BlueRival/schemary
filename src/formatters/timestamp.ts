@@ -179,18 +179,18 @@ function parseDateTime(
  * Uses Luxon's single-quote quoting for literals in the format string.
  *
  * @param {string} date - The date string to be formatted.
- * @param {string | FormatShortNames} format - The desired format for the output date string.
- * @param {string | FormatShortNames} parseFormat - If provided, is a hint on how to parse the input date string.
+ * @param {string | FormatShortNames} targetFormat - The desired format for the output date string.
+ * @param {string | FormatShortNames} inputFormat - If provided, is a hint on how to parse the input date string.
  * @return {string} The formatted date string.
  */
-export function formatTimestamp(
+export function format(
   date: string,
-  format: string | FormatShortNames,
-  parseFormat?: string | FormatShortNames,
+  targetFormat: string | FormatShortNames,
+  inputFormat?: string | FormatShortNames,
 ): string {
-  const dt = parseDateTime(date, parseFormat);
+  const dt = parseDateTime(date, inputFormat);
 
-  switch (format) {
+  switch (targetFormat) {
     case `${FormatShortNames.UNIX}`:
       return dt.toMillis().toString();
 
@@ -211,6 +211,6 @@ export function formatTimestamp(
       return dt.toSQL() as string;
 
     default:
-      return dt.toFormat(format);
+      return dt.toFormat(targetFormat);
   }
 }

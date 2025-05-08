@@ -5,7 +5,7 @@ import {
 } from './plan.js';
 import { PathSegment } from './parser/ast/pathSegment.class.js';
 import { JSONType } from './types.js';
-import { formatTimestamp } from '../formatters/timestamp.js';
+import { format as TimestampFormatter } from '../formatters/timestamp.js';
 
 function getValue(source: JSONType, path: PathSegment[]): JSONType | undefined {
   return PathSegment.getValue(source, path);
@@ -112,7 +112,7 @@ export function map(
 
           switch (formatType) {
             case MappingRuleFormatType.TIMESTAMP:
-              valueToSet = formatTimestamp(
+              valueToSet = TimestampFormatter(
                 valueToSet,
                 formatDestination as string, // we know this is a string because of higher up logic
                 formatSource as string, // we know this is a string because of higher up logic
