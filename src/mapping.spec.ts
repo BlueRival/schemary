@@ -1,85 +1,144 @@
 import { describe, expect, it } from 'vitest';
-import * as mappingExports from './mapping.js';
-import * as mappingModuleExports from './mapping/index.js';
+import { z } from 'zod';
 import {
   compile,
-  MappingRuleParams,
-  MappingPlanParams,
-  map,
   MappingPlan,
-  MAP_DIRECTION,
+  MappingPlanRuleOrder,
+  MappingRuleParams,
 } from './mapping.js';
 
-// Helper function to check if an exported item is a function
-function isFunction(item: unknown): boolean {
-  return typeof item === 'function';
-}
+// Define test schemas for left and right sides
+const LeftObjectSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  dob: z
+    .string()
+    .regex(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/)
+    .refine(
+      (val) =>
+        !isNaN(
+          Date.parse(val.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$1-$2')),
+        ),
+    ),
+  age: z.number(),
+  isActive: z.boolean().optional(),
+});
+type LeftObjectType = z.infer<typeof LeftObjectSchema>;
 
-// Helper function to check if an exported item is a class or object type
-function isObjectOrClass(item: unknown): boolean {
-  return (
-    typeof item === 'object' ||
-    (typeof item === 'function' && item.prototype !== undefined)
-  );
-}
+const RightObjectSchema = z.object({
+  identifier: z.number(),
+  user: z.string(),
+  yearsOld: z.number(),
+  dob: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine((val) => !isNaN(Date.parse(val.replace(/-/g, '/'))), {
+      message: 'Invalid date',
+    }),
+  active: z.boolean().optional(),
+  extraInfo: z.string(),
+});
+type RightObjectType = z.infer<typeof RightObjectSchema>;
 
-describe('Mapping Module Exports', () => {
-  it('should export the compile function', () => {
-    expect(isFunction(mappingExports.compile)).toBe(true);
-    expect(compile).toBe(mappingModuleExports.compile);
-  });
+// Test data
+const validLeftObject: LeftObjectType = {
+  id: 123,
+  username: 'johndoe',
+  dob: '03/02/1981',
+  age: 30,
+  isActive: true,
+};
 
-  it('should export the map function', () => {
-    expect(isFunction(mappingExports.map)).toBe(true);
-    expect(map).toBe(mappingModuleExports.map);
-  });
+const validRightObject: RightObjectType = {
+  identifier: 123,
+  user: 'johndoe',
+  dob: '1981-03-02',
+  yearsOld: 30,
+  active: true,
+  extraInfo: 'Additional information',
+};
 
-  it('should export the MAP_DIRECTION enum', () => {
-    expect(isObjectOrClass(mappingExports.MAP_DIRECTION)).toBe(true);
-    expect(mappingExports.MAP_DIRECTION).toBe(
-      mappingModuleExports.MAP_DIRECTION,
-    );
+const validMappingRules: MappingRuleParams[] = [
+  {
+    left: 'id',
+    right: 'identifier',
+  },
+  {
+    left: 'username',
+    right: 'user',
+  },
+  {
+    left: 'dob',
+    leftTransform: (dob: string): string => {
+      const [year, month, day] = dob.split('-');
+      return `${month}/${day}/${year}`;
+    },
+    right: 'dob',
+    rightTransform: (dob: string): string => {
+      const [month, day, year] = dob.split('/');
+      return `${year}-${month}-${day}`;
+    },
+  },
+  {
+    left: 'age',
+    right: 'yearsOld',
+  },
+  {
+    left: 'isActive',
+    right: 'active',
+  },
+  {
+    literal: 'Additional information',
+    right: 'extraInfo',
+  },
+];
 
-    // Check that the enum has the expected values
-    expect(mappingExports.MAP_DIRECTION.LeftToRight).toBe(0);
-    expect(mappingExports.MAP_DIRECTION.RightToLeft).toBe(1);
-  });
+describe('MappingPlan', () => {
+  it('should compile mapping rules to a plan object', () => {
+    const plan = compile(validMappingRules, {
+      leftSchema: LeftObjectSchema,
+      rightSchema: RightObjectSchema,
+    });
 
-  it('should export the MappingPlan class', () => {
-    expect(isObjectOrClass(mappingExports.MappingPlan)).toBe(true);
-    expect(MappingPlan).toBe(mappingModuleExports.MappingPlan);
-
-    // Create a simple instance to verify the class works
-    const plan = new mappingExports.MappingPlan([]);
-    expect(plan).toBeInstanceOf(mappingModuleExports.MappingPlan);
-  });
-
-  it('should maintain interface compatibility', () => {
-    // Create a basic mapping rule
-    const rule: MappingRuleParams<string, number> = {
-      left: 'source.stringValue',
-      right: 'target.numericValue',
-      leftTransform: (rightValue: number) => String(rightValue),
-      rightTransform: (leftValue: string) => Number(leftValue),
-    };
-
-    // Verify compile function works with the exported types
-    const planParams: MappingPlanParams = {
-      order: {
-        toLeft: 0,
-        toRight: 1,
-      },
-    };
-
-    const plan = compile([rule], planParams);
     expect(plan).toBeInstanceOf(MappingPlan);
-    expect(plan.rules.length).toBe(1);
+  });
 
-    // Verify map function works with the exported types
-    const source = { source: { stringValue: '42' } };
-    const result = map(source, plan, undefined, MAP_DIRECTION.LeftToRight);
+  it('should compile mapping rules to a plan object with order params', () => {
+    const plan = compile(validMappingRules, {
+      leftSchema: LeftObjectSchema,
+      rightSchema: RightObjectSchema,
+      order: {
+        toRight: MappingPlanRuleOrder.DESC,
+        toLeft: MappingPlanRuleOrder.DESC,
+      },
+    });
 
-    // The result should have the mapped and transformed value
-    expect(result).toEqual({ target: { numericValue: 42 } });
+    expect(plan).toBeInstanceOf(MappingPlan);
+  });
+
+  it('should process left to right transforms', () => {
+    const plan = compile(validMappingRules, {
+      leftSchema: LeftObjectSchema,
+      rightSchema: RightObjectSchema,
+    });
+
+    const rightObject = plan.map(validLeftObject);
+
+    expect(rightObject).toStrictEqual(validRightObject);
+
+    RightObjectSchema.parse(rightObject);
+  });
+
+  it('should process right to left transforms', () => {
+    const plan = compile(validMappingRules, {
+      leftSchema: LeftObjectSchema,
+      rightSchema: RightObjectSchema,
+    });
+
+    const leftObject = plan.reverseMap(validRightObject);
+
+    expect(leftObject).toStrictEqual(validLeftObject);
+
+    LeftObjectSchema.parse(leftObject);
   });
 });

@@ -1,6 +1,11 @@
-import { MappingPlan, MappingPlanRuleOrder } from './plan.js';
+import {
+  MappingPlan,
+  MappingPlanRuleOrder,
+  MappingRuleFormatType,
+} from './plan.js';
 import { PathSegment } from './parser/ast/pathSegment.class.js';
 import { JSONType } from './types.js';
+import { formatTimestamp } from '../formatters/timestamp.js';
 
 function getValue(source: JSONType, path: PathSegment[]): JSONType | undefined {
   return PathSegment.getValue(source, path);
@@ -64,6 +69,22 @@ export function map(
         ? rule.rightTransform
         : rule.leftTransform;
 
+    let formatType: MappingRuleFormatType | undefined;
+    let formatSource: string | undefined;
+    let formatDestination: string | undefined;
+
+    if (rule.format) {
+      formatType = rule.format.type;
+
+      if (direction === MAP_DIRECTION.LeftToRight) {
+        formatSource = rule.format.left;
+        formatDestination = rule.format.right;
+      } else {
+        formatSource = rule.format.right;
+        formatDestination = rule.format.left;
+      }
+    }
+
     // Determine the value to set
     let valueToSet: JSONType = undefined;
 
@@ -82,6 +103,22 @@ export function map(
         if (transform) {
           // we know that whatever type is returned from transform is a JSONType
           valueToSet = transform(valueToSet) as JSONType;
+        }
+
+        if (formatType) {
+          if (typeof valueToSet !== 'string') {
+            throw new Error('Can not apply formatting to non-string value');
+          }
+
+          switch (formatType) {
+            case MappingRuleFormatType.TIMESTAMP:
+              valueToSet = formatTimestamp(
+                valueToSet,
+                formatDestination as string, // we know this is a string because of higher up logic
+                formatSource as string, // we know this is a string because of higher up logic
+              );
+              break;
+          }
         }
       }
     }

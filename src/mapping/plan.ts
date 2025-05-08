@@ -48,31 +48,6 @@ interface MappingRuleParamsLiteralRight {
 }
 
 /**
- * Represents a mapping structure where a string key is mapped to a literal JSON
- * type.
- *
- * This combination forces the left and right side to have the same literal
- * value regardless of the direction of the mapping.
- *
- * This interface is designed to define a mapping that includes a left-hand side
- * identifier or key and its corresponding literal value that adheres to a
- * JSON-defined data type.
- *
- * There is no right side because literal replaces the right side.
- *
- * In the event of a left-to-right mapping, the rule is ignored.
- *
- * Properties:
- * - `left`: A string representing the key or identifier in the mapping.
- *
- */
-interface MappingRuleParamsLiteral {
-  left: string;
-  right: string;
-  literal: JSONType;
-}
-
-/**
  * Represents a transformation interface where a mapping between a left-hand
  * value and a right-hand value is established. Each side of the mapping has
  * an associated transformation function that operates on the corresponding
@@ -127,15 +102,29 @@ export interface MappingRuleParamsLiteralTransform<
  */
 interface MappingRuleParamsLiteralNeither {
   left: string;
-
   right: string;
+}
+
+export enum MappingRuleFormatType {
+  TIMESTAMP = 'timestamp',
+  PHONE = 'number',
+}
+
+interface MappingRuleParamsFormat {
+  left: string;
+  right: string;
+  format: {
+    type: MappingRuleFormatType;
+    left: string;
+    right: string;
+  };
 }
 
 export type MappingRuleParamsStatic =
   | MappingRuleParamsLiteralLeft
   | MappingRuleParamsLiteralRight
-  | MappingRuleParamsLiteral
-  | MappingRuleParamsLiteralNeither;
+  | MappingRuleParamsLiteralNeither
+  | MappingRuleParamsFormat;
 
 export type MappingRuleParams<
   LeftTransformType extends JSONType,
@@ -182,6 +171,11 @@ export class MappingRule<
   ) => RightTransformType;
   private readonly myLiteral?: JSONType;
   public readonly hasLiteral: boolean = false;
+  public readonly format?: {
+    type: MappingRuleFormatType;
+    left: string;
+    right: string;
+  };
 
   constructor(
     params: MappingRuleParams<LeftTransformType, RightTransformType>,
@@ -225,6 +219,10 @@ export class MappingRule<
     if ('literal' in params) {
       this.hasLiteral = true;
       this.myLiteral = params.literal;
+    }
+
+    if ('format' in params) {
+      this.format = params.format;
     }
   }
 

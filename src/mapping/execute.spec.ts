@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   compile,
-  map,
-  MAP_DIRECTION,
   MappingPlanParams,
   MappingPlanRuleOrder,
   MappingRuleParams,
-} from './index.js';
+} from './compile.js';
+
+import { map, MAP_DIRECTION } from './execute.js';
 import { JSONType } from './types.js';
+import { MappingRuleFormatType } from './plan.js';
+import { FormatShortNames as TimestampFormats } from '../formatters/timestamp.js';
 
 // Uses these short-cut flags on tests to quick-pass true for the respective options
 const bidirectional = true;
@@ -151,6 +153,51 @@ describe('JSON Schema Mapping', () => {
           streetAddress: '123 Main St',
           city: 'Anytown',
         },
+      },
+    },
+  ]);
+
+  generateTests('formatting', [
+    {
+      name: 'Should map between date formats back and forth using shortcut formats',
+      bidirectional,
+      rules: [
+        {
+          left: 'timestamp',
+          right: 'timestamp',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ],
+      left: {
+        timestamp: '2020-05-16T14:34:07.000Z',
+      },
+      right: {
+        timestamp: 'Sat, 16 May 2020 14:34:07 GMT',
+      },
+    },
+    {
+      name: 'Should map between date formats back and forth using custom formats',
+      bidirectional,
+      rules: [
+        {
+          left: 'timestamp',
+          right: 'timestamp',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: 'yyyy-MM-dd',
+            right: 'EEE, d MMM yyyy',
+          },
+        },
+      ],
+      left: {
+        timestamp: '2020-05-16',
+      },
+      right: {
+        timestamp: 'Sat, 16 May 2020',
       },
     },
   ]);
