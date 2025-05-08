@@ -17,7 +17,7 @@ import {
 
 import { map as mapCore, MAP_DIRECTION } from './mapping/execute.js';
 
-import { JSONType } from './mapping/types.js';
+import { JSONType } from './types.js';
 import { InputArraySchema, InputObjectSchema, Overrides } from './types.js';
 
 type MappingSchema<T> = InputObjectSchema<T> | InputArraySchema<T>;

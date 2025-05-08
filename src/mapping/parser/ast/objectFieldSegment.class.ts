@@ -1,5 +1,5 @@
 import { PathSegment } from './pathSegment.class.js';
-import { JSONType, JSONObject } from '../../types.js';
+import { JSONType, JSONObject } from '../../../types.js';
 
 // Field access segment (e.g., "user")
 export class ObjectFieldSegmentClass extends PathSegment {

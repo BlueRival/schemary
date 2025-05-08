@@ -7,7 +7,7 @@ import {
 } from './compile.js';
 
 import { map, MAP_DIRECTION } from './execute.js';
-import { JSONType } from './types.js';
+import { JSONType } from '../types.js';
 import { MappingRuleFormatType } from './plan.js';
 import { FormatShortNames as TimestampFormats } from '../formatters/timestamp.js';
 

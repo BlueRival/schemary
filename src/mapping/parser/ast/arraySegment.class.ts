@@ -1,5 +1,5 @@
 import { PathSegment } from './pathSegment.class.js';
-import { JSONType, JSONArray } from '../../types.js';
+import { JSONType, JSONArray } from '../../../types.js';
 import { clone } from '../../../schema.js';
 
 export class ArraySegmentClass extends PathSegment {

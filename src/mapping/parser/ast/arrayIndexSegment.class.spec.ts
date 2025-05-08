@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ArrayIndexSegmentClass } from './arrayIndexSegment.class.js';
 import { PathSegment } from './pathSegment.class.js';
-import { JSONType } from '../../types.js';
+import { JSONType } from '../../../types.js';
 
 describe('ArrayIndexSegment', () => {
   describe('Construction', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ObjectFieldSegmentClass } from './objectFieldSegment.class.js';
-import { JSONType } from '../../types.js';
+import { JSONType } from '../../../types.js';
 
 describe('ObjectFieldSegment', () => {
   describe('Construction', () => {

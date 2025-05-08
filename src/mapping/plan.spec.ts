@@ -5,7 +5,7 @@ import {
   MappingRule,
   MappingRuleParams,
 } from './plan.js';
-import { JSONType } from './types.js';
+import { JSONType } from '../types.js';
 
 export type MappingRulesParamsAny = MappingRuleParams<any, any>;
 

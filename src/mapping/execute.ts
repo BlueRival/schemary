@@ -4,7 +4,7 @@ import {
   MappingRuleFormatType,
 } from './plan.js';
 import { PathSegment } from './parser/ast/pathSegment.class.js';
-import { JSONType } from './types.js';
+import { JSONType } from '../types.js';
 import { format as TimestampFormatter } from '../formatters/timestamp.js';
 
 function getValue(source: JSONType, path: PathSegment[]): JSONType | undefined {

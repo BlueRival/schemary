@@ -1,5 +1,5 @@
 import { PathSegment } from './pathSegment.class.js';
-import { JSONType, JSONArray } from '../../types.js';
+import { JSONType, JSONArray } from '../../../types.js';
 
 // Array index segment (e.g., [0], [-1])
 export class ArrayIndexSegmentClass extends PathSegment {

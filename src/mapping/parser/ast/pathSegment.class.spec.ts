@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PathSegment } from './pathSegment.class.js';
 import { ArrayIndexSegmentClass } from './arrayIndexSegment.class.js';
 import { ObjectFieldSegmentClass } from './objectFieldSegment.class.js';
-import { JSONType } from '../../types.js';
+import { JSONType } from '../../../types.js';
 
 // Helper class that extends PathSegment for testing purposes
 class TestPathSegment extends PathSegment {

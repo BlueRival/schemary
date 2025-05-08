@@ -1,6 +1,6 @@
 import { clone } from '../schema.js';
 import { PathSegment } from './parser/ast/pathSegment.class.js';
-import { JSONType } from './types.js';
+import { JSONType } from '../types.js';
 import { Parser } from './parser/core.js';
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ArraySegmentClass } from './arraySegment.class.js';
 import { PathSegment } from './pathSegment.class.js';
-import { JSONObject, JSONType } from '../../types.js';
+import { JSONObject, JSONType } from '../../../types.js';
 import { clone } from '../../../schema.js';
 
 // Uses these short-cut flags on tests to quick-pass true for the respective options

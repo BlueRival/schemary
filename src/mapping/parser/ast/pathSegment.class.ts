@@ -1,4 +1,4 @@
-import { JSONType } from '../../types.js';
+import { JSONType } from '../../../types.js';
 
 // Base class for path segments
 export abstract class PathSegment {

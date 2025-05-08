@@ -1,7 +1,8 @@
 # JSON Schema Mapping
 
-A flexible, bidirectional JSON transformation system that allows mapping between different JSON schemas using a simple
-DSL (Domain Specific Language).
+A powerful, bidirectional JSON transformation system that allows mapping between different JSON structures using a
+simple DSL (Domain Specific Language). The mapping system can validate input and output using Zod schemas, transform
+values, and support complex data structures.
 
 ## Overview
 
@@ -12,66 +13,142 @@ particularly useful for:
 - Preparing internal data for API requests
 - Data migration between different schema versions
 - Adapting data between different parts of a system
+- Format conversions (e.g., date/time formats)
+
+## Key Features
+
+- **Bidirectional Mapping**: Map data in both directions using a single mapping definition
+- **Schema Validation**: Validate input and output data using Zod schemas
+- **Value Transformation**: Transform values using custom functions
+- **Array Support**: Rich support for array operations including indexing and slicing
+- **Literal Values**: Define default values when fields don't exist in the source
+- **Overrides**: Override mapped values with custom values
+- **Rule Order Control**: Configure rule application order for complex mappings
 
 ## Basic Usage
 
 ```typescript
-import { compile, map, Direction } from '../utils/schema/mapping/index.js';
+import { z } from 'zod';
+import { compile, MappingRuleParams } from 'schemary';
 
-// Define mappings
-const mappings = [
+// Define schemas
+const LeftSchema = z.object({
+  user: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    age: z.number(),
+    isActive: z.boolean().optional(),
+  }),
+});
+
+const RightSchema = z.object({
+  identifier: z.number(),
+  person: z.object({
+    given_name: z.string(),
+    family_name: z.string(),
+  }),
+  yearsOld: z.number(),
+  active: z.boolean().optional(),
+});
+
+// Define mapping rules
+const mappingRules: MappingRuleParams[] = [
+  { left: 'user.id', right: 'identifier' },
   { left: 'user.firstName', right: 'person.given_name' },
   { left: 'user.lastName', right: 'person.family_name' },
-  { left: 'user.age', right: 'person.age' },
-  { left: 'user.verified', right: "'true'" } // Literal boolean value
+  { left: 'user.age', right: 'yearsOld' },
+  { left: 'user.isActive', right: 'active' },
 ];
 
-// Compile the mappings
-const plan = compile(mappings);
+// Compile the mapping plan
+const plan = compile(mappingRules, {
+  leftSchema: LeftSchema,
+  rightSchema: RightSchema,
+});
 
 // Source data
-const sourceData = {
+const source = {
   user: {
+    id: 123,
     firstName: 'John',
     lastName: 'Doe',
-    age: 30
-  }
+    age: 30,
+    isActive: true,
+  },
 };
 
 // Transform left to right
-const result = map(sourceData, plan, Direction.LeftToRight);
+const result = plan.map(source);
 // Result:
 // {
+//   identifier: 123,
 //   person: {
 //     given_name: 'John',
-//     family_name: 'Doe',
-//     age: 30
+//     family_name: 'Doe'
 //   },
-//   verified: true  // Literal value is used
+//   yearsOld: 30,
+//   active: true
 // }
 
 // Transform right to left
-const rightToLeftResult = map(result, plan, Direction.RightToLeft);
-// Result is equivalent to original sourceData
+const rightToLeftResult = plan.reverseMap(result);
+// Result is equivalent to original source
 ```
 
-## API
+## API Reference
 
-### `compile(mappings: RawMapping[]): MappingPlan`
+### Defining Mappings
 
-Validates and compiles an array of raw mappings into a reusable mapping plan.
+```typescript
+interface MappingRuleParams {
+  left?: string;               // Path to the field in the left schema
+  right?: string;              // Path to the field in the right schema
+  literal?: JSONType;          // Literal value to use (when left or right is missing)
+  leftTransform?: Function;    // Transform function for right-to-left mapping
+  rightTransform?: Function;   // Transform function for left-to-right mapping
+  format?: {                   // Format conversions (e.g., date formats)
+    type: MappingRuleFormatType;
+    left: string;
+    right: string;
+  };
+}
+```
 
-- `mappings`: Array of objects with `left` and `right` properties containing DSL path expressions
+### Compile Function
 
-###
-`map(source: JSONObject | JSONArray, mappingPlan: MappingPlan, direction?: Direction, overrides?: JSONObject): JSONObject | JSONArray`
+```typescript
+function compile<L, R>(
+  rules: MappingRuleParams[],
+  params: {
+    leftSchema: z.ZodTypeAny,
+    rightSchema: z.ZodTypeAny,
+    order?: {
+      toLeft?: MappingPlanRuleOrder,
+      toRight?: MappingPlanRuleOrder
+    }
+  }
+): MappingPlan
+```
 
-Transforms data according to the mapping plan.
+### MappingPlan Class
 
-- `source`: Source object or array to transform
-- `mappingPlan`: Compiled mapping plan
-- `direction`: Direction of mapping (Direction.LeftToRight or Direction.RightToLeft, defaults to Direction.LeftToRight)
-- `overrides`: Optional values to override in the result (takes precedence over mapped values)
+The compiled mapping plan provides methods to transform data in both directions:
+
+```typescript
+class MappingPlan {
+  // Transform data from left schema to right schema
+  map(
+    leftValue: LeftSchemaType,
+    overrideValues?: Overrides<RightSchemaType>
+  ): RightSchemaType;
+
+  // Transform data from right schema to left schema
+  reverseMap(
+    rightValue: RightSchemaType,
+    overrideValues?: Overrides<LeftSchemaType>
+  ): LeftSchemaType;
+}
+```
 
 ## Mapping DSL Syntax
 
@@ -114,79 +191,147 @@ data.\[field\]   // Accesses a field named '[field]'
 
 ### Literal Values
 
-You can specify a literal value by enclosing it in single quotes. The value inside must be valid JSON:
+You can specify a literal value to use instead of a field mapping:
 
 ```typescript
-// Boolean true
-{ left: 'user.verified', right: "'true'" }
-
-// Boolean false
-{ left: 'user.active', right: "'false'" }
+// Boolean true 
+{
+  left: 'user.verified', literal
+:
+  true
+}
 
 // String
-{ left: 'user.status', right: "'\"active\"'" }
+{
+  right: 'status', literal
+:
+  'active'
+}
 
 // Number
-{ left: 'product.defaultQuantity', right: "'10'" }
-
-// Null
-{ left: 'user.middleName', right: "'null'" }
+{
+  right: 'defaultQuantity', literal
+:
+  42
+}
 
 // Object
-{ left: 'user.preferences', right: "'{\"theme\":\"dark\",\"notifications\":true}'" }
+{
+  right: 'preferences', literal
+:
+  {
+    theme: 'dark', notifications
+  :
+    true
+  }
+}
 
 // Array
-{ left: 'user.roles', right: "'[\"user\",\"admin\"]'" }
+{
+  right: 'roles', literal
+:
+  ['user', 'admin']
+}
 ```
 
-When mapping in one direction, if one side is a literal value, that value will always be used regardless of the source data. For example:
+## Advanced Features
+
+### Value Transformations
+
+Apply custom transformations to values during mapping:
 
 ```typescript
-const mappings = [
-  { left: 'user.verified', right: "'true'" }
+const mappingRules = [
+  {
+    left: 'dob',
+    right: 'dateOfBirth',
+    // Transform to convert from MM/DD/YYYY to YYYY-MM-DD
+    leftTransform: (isoDateString: string): string => {
+      const [year, month, day] = isoDateString.split('-');
+      return `${month}/${day}/${year}`;
+    },
+    // Transform to convert from YYYY-MM-DD to MM/DD/YYYY
+    rightTransform: (dateString: string): string => {
+      const [month, day, year] = dateString.split('/');
+      return `${year}-${month}-${day}`;
+    },
+  }
 ];
 
-// When mapping left to right, the 'verified' field will always be 'true'
-// regardless of whether 'user.verified' exists in the source
-const result = map(source, compile(mappings), Direction.LeftToRight);
-// { verified: true }
-
-// When mapping right to left, there's no path to get data from on the right,
-// so nothing is set for user.verified
-const resultRightToLeft = map(rightSource, compile(mappings), Direction.RightToLeft);
-// { user: {} }
+// Left value: { dob: '05/16/1990' }
+// Right value: { dateOfBirth: '1990-05-16' }
 ```
 
-### Bidirectional Array Mapping
+### Format Conversions
 
-The system supports bidirectional array mapping, including:
+The library includes built-in format conversions for common types like dates:
 
 ```typescript
-// Simple array index mapping
-{ left: 'users[0]', right: 'firstUser' }
+import { MappingRuleFormatType, FormatShortNames } from 'schemary';
 
-// Array slice mapping
-{ left: 'data[0].values[[0,2]]', right: 'firstValues' }
-
-// Negative index mapping
-{ left: 'data[-1].values', right: 'lastItemValues' }
+const mappingRules = [
+  {
+    left: 'created',
+    right: 'creationDate',
+    format: {
+      type: MappingRuleFormatType.TIMESTAMP,
+      left: FormatShortNames.ISO8601,  // '2023-01-15T14:30:00.000Z'
+      right: FormatShortNames.HTTP,    // 'Sun, 15 Jan 2023 14:30:00 GMT'
+    },
+  }
+];
 ```
 
-When mapping from right to left (where the left side has array indices):
-- For simple indices, the system creates the array if needed and sets the indexed value
-- For array slices, the system creates the necessary structures and splices in values from the right side
-- For negative indices, the system counts backward from the end of the array
+Available timestamp formats:
 
-For example, when mapping from `firstUser` to `users[0]`:
-1. The system ensures `users` exists and is an array
-2. It then sets `users[0]` to the value of `firstUser`
+- ISO8601 - ISO 8601 format
+- RFC3339 - RFC 3339 format
+- RFC2822 - RFC 2822 format
+- HTTP - HTTP header date format
+- SQL - SQL date format
+- UNIX - UNIX timestamp (seconds since epoch)
+- UNIX_MS - UNIX timestamp (milliseconds since epoch)
+
+### Rule Order Control
+
+Control the order in which rules are applied:
+
+```typescript
+import { MappingPlanRuleOrder } from 'schemary';
+
+const plan = compile(mappingRules, {
+  leftSchema: LeftSchema,
+  rightSchema: RightSchema,
+  order: {
+    toRight: MappingPlanRuleOrder.DESC, // For left-to-right mapping
+    toLeft: MappingPlanRuleOrder.ASC,   // For right-to-left mapping
+  }
+});
+```
+
+With `ASC` order (default), rules are applied in the order they are defined, and later rules can override earlier ones.
+With `DESC` order, rules are applied in reverse order, so earlier rules take precedence.
+
+### Value Overrides
+
+Override mapped values with custom values:
+
+```typescript
+// Map with overrides
+const result = plan.map(source, {
+  'person.given_name': 'Jane',  // Override the mapped value
+  yearsOld: 25,                // Override the mapped value
+});
+```
 
 ## Examples
 
 ### Basic Field Mapping
 
+Map simple fields between different structures:
+
 ```typescript
-const mappings = [
+const mappingRules = [
   { left: 'name', right: 'userName' },
   { left: 'email', right: 'userEmail' }
 ];
@@ -198,59 +343,23 @@ const source = {
 };
 
 // Mapped result (right schema)
-const result = map(compile(mappings), source, Direction.LeftToRight);
+const result = plan.map(source);
 // {
 //   userName: 'Alice',
 //   userEmail: 'alice@example.com'
 // }
 ```
 
-### Literal Values
+### Nested Objects
+
+Map between deeply nested structures:
 
 ```typescript
-const mappings = [
-  { left: 'user.name', right: 'userName' },
-  { left: 'user.verified', right: "'true'" }, // Default boolean value
-  { left: "'\"Unknown\"'", right: 'fallbackName' } // Default string value
-];
-
-// Source (left schema)
-const source = {
-  user: {
-    name: 'Alice'
-    // No verified field
-  }
-};
-
-// Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
-// {
-//   userName: 'Alice',
-//   verified: true  // Literal value
-// }
-
-// When mapping right to left
-const sourceRight = {
-  userName: 'Bob',
-  fallbackName: 'Backup'
-};
-
-// The literal values will be used when mapping in their respective directions
-const resultRightToLeft = map(sourceRight, compile(mappings), Direction.RightToLeft);
-// {
-//   user: {
-//     name: 'Bob'
-//   },
-//   fallbackName: 'Unknown'  // Literal string from left side
-// }
-```
-
-### Nested Object Mapping
-
-```typescript
-const mappings = [
+const mappingRules = [
   { left: 'user.contact.email', right: 'profile.emailAddress' },
-  { left: 'user.contact.phone', right: 'profile.phoneNumber' }
+  { left: 'user.contact.phone', right: 'profile.phoneNumber' },
+  { left: 'user.address.street', right: 'location.streetAddress' },
+  { left: 'user.address.city', right: 'location.city' }
 ];
 
 // Source (left schema)
@@ -259,49 +368,63 @@ const source = {
     contact: {
       email: 'john@example.com',
       phone: '555-1234'
+    },
+    address: {
+      street: '123 Main St',
+      city: 'Anytown'
     }
   }
 };
 
 // Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+const result = plan.map(source);
 // {
 //   profile: {
 //     emailAddress: 'john@example.com',
 //     phoneNumber: '555-1234'
+//   },
+//   location: {
+//     streetAddress: '123 Main St',
+//     city: 'Anytown'
 //   }
 // }
 ```
 
 ### Array Mapping
 
+Map array elements between different structures:
+
 ```typescript
-const mappings = [
+const mappingRules = [
   { left: 'users[0].name', right: 'firstUser' },
-  { left: 'users[-1].name', right: 'lastUser' }
+  { left: 'users[1].email', right: 'secondUserEmail' },
+  { left: 'users[-1].name', right: 'lastUser' },
 ];
 
 // Source (left schema)
 const source = {
   users: [
-    { name: 'Alice', age: 30 },
-    { name: 'Bob', age: 25 },
-    { name: 'Charlie', age: 35 }
+    { name: 'Alice', email: 'alice@example.com' },
+    { name: 'Bob', email: 'bob@example.com' },
+    { name: 'Charlie', email: 'charlie@example.com' }
   ]
 };
 
 // Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+const result = plan.map(source);
 // {
 //   firstUser: 'Alice',
+//   secondUserEmail: 'bob@example.com',
 //   lastUser: 'Charlie'
 // }
 ```
 
-### Array Slicing
+### Array Slices
+
+Extract and map subsets of arrays:
 
 ```typescript
-const mappings = [
+const mappingRules = [
   { left: 'scores[[0,3]]', right: 'topScores' }
 ];
 
@@ -311,113 +434,137 @@ const source = {
 };
 
 // Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+const result = plan.map(source);
 // {
 //   topScores: [100, 95, 90]
 // }
 ```
 
-### Mapping with Overrides
+### Default Values with Literals
+
+Provide default values for fields that don't exist in one schema:
 
 ```typescript
-const mappings = [
-  { left: 'user.firstName', right: 'name' },
-  { left: 'user.lastName', right: 'surname' }
+const mappingRules = [
+  { left: 'user.name', right: 'userName' },
+  { right: 'userStatus', literal: 'active' },
+  { left: 'user.defaultTheme', literal: 'light' }
 ];
 
-// Source (left schema)
+// When mapping left to right
 const source = {
   user: {
-    firstName: 'John',
-    lastName: 'Doe'
+    name: 'John',
+    // No defaultTheme field
   }
 };
 
-// Override values
-const overrides = {
-  surname: 'Smith' // This takes precedence over mapping
+const result = plan.map(source);
+// {
+//   userName: 'John',
+//   userStatus: 'active'  // Literal value
+// }
+
+// When mapping right to left
+const rightSource = {
+  userName: 'Bob',
+  userStatus: 'inactive'  // This will be ignored
 };
 
-// Mapped result with overrides
-const result = map(source, compile(mappings), Direction.LeftToRight, overrides);
+const leftResult = plan.reverseMap(rightSource);
 // {
-//   name: 'John',
-//   surname: 'Smith'  // From overrides, not from source
+//   user: {
+//     name: 'Bob',
+//     defaultTheme: 'light'  // Literal value
+//   }
 // }
 ```
 
-## Complex Examples
+### Value Transformations
 
-### Nested Array Mapping
+Transform values during mapping:
 
 ```typescript
-const mappings = [
-  { left: 'departments[0].employees[[0,2]].name', right: 'topEmployees' }
+const mappingRules = [
+  {
+    left: 'temperature.celsius',
+    right: 'temperature.fahrenheit',
+    rightTransform: (celsius: number) => celsius * 9 / 5 + 32,
+    leftTransform: (fahrenheit: number) => (fahrenheit - 32) * 5 / 9
+  }
 ];
 
-// Source (left schema)
-const source = {
-  departments: [
-    {
-      name: 'Engineering',
-      employees: [
-        { name: 'Alice', role: 'Developer' },
-        { name: 'Bob', role: 'Designer' },
-        { name: 'Charlie', role: 'Manager' },
-        { name: 'Dave', role: 'Developer' }
-      ]
-    },
-    {
-      name: 'Marketing',
-      employees: [
-        { name: 'Eve', role: 'Manager' },
-        { name: 'Frank', role: 'Specialist' }
-      ]
+// Left-to-right conversion
+const celsius = { temperature: { celsius: 25 } };
+const fahrenheit = plan.map(celsius);
+// { temperature: { fahrenheit: 77 } }
+
+// Right-to-left conversion
+const backToCelsius = plan.reverseMap(fahrenheit);
+// { temperature: { celsius: 25 } }
+```
+
+### Date Format Conversions
+
+Convert between different date formats:
+
+```typescript
+import { MappingRuleFormatType } from 'schemary';
+
+const mappingRules = [
+  {
+    left: 'createdDate',
+    right: 'createdAt',
+    format: {
+      type: MappingRuleFormatType.TIMESTAMP,
+      left: 'MM/dd/yyyy',
+      right: 'yyyy-MM-dd'
     }
-  ]
+  }
+];
+
+// Source with MM/DD/YYYY format
+const source = {
+  createdDate: '01/15/2023'
 };
 
-// Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+// Result with YYYY-MM-DD format
+const result = plan.map(source);
 // {
-//   topEmployees: ['Alice', 'Bob']
+//   createdAt: '2023-01-15'
 // }
 ```
 
-### Incompatible Schema Structures
+### Root Mapping
 
-Some mappings might not work bidirectionally due to structural differences:
+Map between root objects and nested fields:
 
 ```typescript
-const mappings = [
-  { left: 'users[0]', right: 'firstUser' }
+const mappingRules = [
+  { left: 'users[0]', right: '' }  // Map first user to root
 ];
 
 // Source (left schema)
 const source = {
   users: [
-    { name: 'Alice', age: 30 },
-    { name: 'Bob', age: 25 }
+    { name: 'Alice', email: 'alice@example.com' }
   ]
 };
 
 // Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+const result = plan.map(source);
 // {
-//   firstUser: { name: 'Alice', age: 30 }
-// }
-
-// When mapping back, we lose the array structure
-const mappedBack = map(result, compile(mappings), Direction.RightToLeft);
-// {
-//   users: { name: 'Alice', age: 30 }  // No longer an array!
+//   name: 'Alice',
+//   email: 'alice@example.com'
 // }
 ```
 
 ### Complex Array Transformations
 
+Work with complex array structures:
+
 ```typescript
-const mappings = [
+const mappingRules = [
   { left: 'data[0].values[[0,2]]', right: 'firstValues' },
   { left: 'data[-1].values[[0,2]]', right: 'lastValues' }
 ];
@@ -432,37 +579,229 @@ const source = {
 };
 
 // Mapped result (right schema)
-const result = map(source, compile(mappings), Direction.LeftToRight);
+const result = plan.map(source);
 // {
 //   firstValues: [10, 20],
 //   lastValues: [5, 15]
 // }
 ```
 
-## Limitations and Edge Cases
+### Overriding Mapped Values
 
-1. **Array/Object Type Mismatches**: Be careful when mapping between arrays and objects. The system will create the
-   appropriate container type based on the path, but mapping back might not restore the original structure.
+Override specific values during mapping:
 
-2. **Missing Intermediate Nodes**: The system will create missing intermediate objects and arrays as needed, but this
-   might result in sparse arrays if indices are skipped.
+```typescript
+const mappingRules = [
+  { left: 'user.firstName', right: 'givenName' },
+  { left: 'user.lastName', right: 'familyName' },
+  { left: 'user.age', right: 'age' }
+];
 
-3. **Complex Bidirectional Mappings**: Some complex transformations might not be perfectly reversible, especially when
-   working with array slices or when fields are dropped during transformation.
+// Source data
+const source = {
+  user: {
+    firstName: 'John',
+    lastName: 'Doe',
+    age: 30
+  }
+};
 
-4. **Performance with Large Datasets**: Complex mappings on very large datasets might be performance-intensive. Consider
-   batching transformations for large datasets.
+// Override values
+const overrides = {
+  givenName: 'Jane',
+  age: 25  // This takes precedence over the mapped value
+};
+
+// Mapped result with overrides
+const result = plan.map(source, overrides);
+// {
+//   givenName: 'Jane',  // From overrides
+//   familyName: 'Doe',  // From mapping
+//   age: 25             // From overrides
+// }
+```
 
 ## Best Practices
 
-1. Keep mappings as simple as possible for better maintainability.
+1. **Use Schemas for Validation**: Always define schemas for both sides of the mapping to ensure data integrity.
 
-2. Test bidirectional mappings to ensure they work as expected in both directions.
+2. **Keep Mappings Simple**: Break complex mappings into smaller, more manageable units.
 
-3. Validate that source data has the expected structure before mapping.
+3. **Test Bidirectional Mappings**: Always test mappings in both directions to ensure they work as expected.
 
-4. Use literal values wisely to provide defaults for fields that don't exist in one schema.
+4. **Be Careful with Array Mappings**: Array mappings can be complex, especially when mapping between arrays and
+   objects.
 
-5. Consider using overrides for complex transformations that can't be expressed with simple path mappings.
+5. **Use Transformations for Complex Conversions**: When mapping between different data types or formats, use transform
+   functions.
 
-6. **Break Down Large Nested Mappings**: Instead of creating very complex nested mappings, consider breaking them into smaller, more manageable layers. This improves readability, maintainability, and makes debugging easier.
+6. **Document Your Mappings**: Clear documentation helps maintain and debug complex mappings.
+
+7. **Consider Rule Order**: The order of rules matters when fields overlap. Use `MappingPlanRuleOrder` to control
+   precedence.
+
+8. **Handle Missing Fields Gracefully**: Use literals to provide default values for fields that might not exist.
+
+9. **Prefer Path-based Mappings Over Complex Transformations**: Simple path mappings are easier to understand and
+   maintain.
+
+10. **Cache Compiled Mapping Plans**: Reuse compiled mapping plans for better performance.
+
+## Limitations and Edge Cases
+
+1. **Type Mismatches**: Be careful when mapping between different types (e.g., arrays and objects). The system will
+   create appropriate container types, but the structure might not be preserved when mapping back.
+
+2. **Complex Bidirectional Mappings**: Some complex transformations might not be perfectly reversible.
+
+3. **Array Index Changes**: When mapping with array indices, be aware that indices can change if the array structure
+   changes.
+
+4. **Deep Nesting**: Very deep object structures might hit JavaScript's call stack limits.
+
+5. **Performance with Large Datasets**: Complex mappings on very large datasets might be performance-intensive.
+
+6. **Circular References**: The mapping system doesn't handle circular references.
+
+7. **Schema Evolution**: When schemas evolve over time, you might need to update your mappings.
+
+## Advanced Example: API Integration
+
+This example shows a complete workflow for API integration:
+
+```typescript
+import { z } from 'zod';
+import { compile, MappingRuleParams, MappingRuleFormatType } from 'schemary';
+
+// API response schema
+const APIResponseSchema = z.object({
+  id: z.number(),
+  user_name: z.string(),
+  user_email: z.string().email(),
+  created_at: z.string(),
+  is_verified: z.boolean(),
+  preferences: z.object({
+    theme: z.string(),
+    notifications: z.boolean(),
+  }),
+  roles: z.array(z.string()),
+});
+
+// Internal model schema
+const UserModelSchema = z.object({
+  userId: z.number(),
+  profile: z.object({
+    name: z.string(),
+    email: z.string().email(),
+  }),
+  accountInfo: z.object({
+    createdDate: z.string(),
+    verified: z.boolean(),
+  }),
+  settings: z.object({
+    theme: z.string(),
+    enableNotifications: z.boolean(),
+  }),
+  permissions: z.array(z.string()),
+});
+
+// Define mapping rules
+const mappingRules: MappingRuleParams[] = [
+  { left: 'id', right: 'userId' },
+  { left: 'user_name', right: 'profile.name' },
+  { left: 'user_email', right: 'profile.email' },
+  {
+    left: 'created_at',
+    right: 'accountInfo.createdDate',
+    format: {
+      type: MappingRuleFormatType.TIMESTAMP,
+      left: 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'',  // ISO format
+      right: 'MM/dd/yyyy',                      // MM/DD/YYYY format
+    }
+  },
+  { left: 'is_verified', right: 'accountInfo.verified' },
+  { left: 'preferences.theme', right: 'settings.theme' },
+  { left: 'preferences.notifications', right: 'settings.enableNotifications' },
+  { left: 'roles', right: 'permissions' },
+];
+
+// Compile the mapping plan
+const userMapping = compile(mappingRules, {
+  leftSchema: APIResponseSchema,
+  rightSchema: UserModelSchema,
+});
+
+// Example API response
+const apiResponse = {
+  id: 12345,
+  user_name: 'johndoe',
+  user_email: 'john@example.com',
+  created_at: '2023-05-16T14:30:00.000Z',
+  is_verified: true,
+  preferences: {
+    theme: 'dark',
+    notifications: true,
+  },
+  roles: ['user', 'editor'],
+};
+
+// Transform to internal model
+const userModel = userMapping.map(apiResponse);
+// Result:
+// {
+//   userId: 12345,
+//   profile: {
+//     name: 'johndoe',
+//     email: 'john@example.com',
+//   },
+//   accountInfo: {
+//     createdDate: '05/16/2023',
+//     verified: true,
+//   },
+//   settings: {
+//     theme: 'dark',
+//     enableNotifications: true,
+//   },
+//   permissions: ['user', 'editor'],
+// }
+
+// Later, when sending data back to the API
+const updatedUserModel = {
+  userId: 12345,
+  profile: {
+    name: 'johndoe',
+    email: 'john.doe@example.com',  // Updated email
+  },
+  accountInfo: {
+    createdDate: '05/16/2023',
+    verified: true,
+  },
+  settings: {
+    theme: 'light',  // Updated theme
+    enableNotifications: false,  // Updated notifications
+  },
+  permissions: ['user', 'editor', 'admin'],  // Updated roles
+};
+
+// Transform back to API format
+const apiUpdatePayload = userMapping.reverseMap(updatedUserModel);
+// Result:
+// {
+//   id: 12345,
+//   user_name: 'johndoe',
+//   user_email: 'john.doe@example.com',
+//   created_at: '2023-05-16T00:00:00.000Z',
+//   is_verified: true,
+//   preferences: {
+//     theme: 'light',
+//     notifications: false,
+//   },
+//   roles: ['user', 'editor', 'admin'],
+// }
+```
+
+## Conclusion
+
+The JSON Schema Mapping library provides a powerful way to transform data between different schemas. With support for
+bidirectional mapping, schema validation, custom transformations, and advanced features like array operations and format
+conversions, it simplifies the process of working with complex data structures.
