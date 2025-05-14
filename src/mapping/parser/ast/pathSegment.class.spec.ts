@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { PathSegment } from './pathSegment.class.js';
 import { ArrayIndexSegmentClass } from './arrayIndexSegment.class.js';
 import { ObjectFieldSegmentClass } from './objectFieldSegment.class.js';
@@ -26,6 +26,10 @@ class TestPathSegment extends PathSegment {
 }
 
 describe('PathSegment', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('Static methods', () => {
     it('should get value with an empty path', () => {
       const source = { test: 'value' };
@@ -139,6 +143,20 @@ describe('PathSegment', () => {
 
       expect(() => segment.getValue({})).toThrow('Test error at: <root>.test');
     });
+
+    it('should handle non-Error exceptions in path traversal', () => {
+      const segment = new TestPathSegment('test');
+      // Override _getValue to throw a non-Error value
+      segment['_getValue'] = () => {
+        // Throw a string instead of an Error
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw 'This is not an Error object';
+      };
+
+      expect(() => segment.getValue({})).toThrow(
+        'This is not an Error object at: <root>.test',
+      );
+    });
   });
 
   describe('setValue method', () => {
@@ -206,6 +224,18 @@ describe('PathSegment', () => {
       expect(() => segment.setValue({}, {})).toThrow(
         'Test error at: <root>.test',
       );
+    });
+
+    it('should handle non-Error exceptions in setValue', () => {
+      const segment = new TestPathSegment('test');
+      // Override _setValue to throw a non-Error value
+      segment['_setValue'] = () => {
+        // Throw a number instead of an Error
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw 42;
+      };
+
+      expect(() => segment.setValue({}, {})).toThrow('42 at: <root>.test');
     });
   });
 });

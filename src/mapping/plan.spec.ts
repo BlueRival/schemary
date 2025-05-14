@@ -1,15 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   MappingPlan,
   MappingPlanRuleOrder,
   MappingRule,
   MappingRuleParams,
 } from './plan.js';
+import { Parser } from './parser/core.js';
 import { JSONType } from '../types.js';
 
 export type MappingRulesParamsAny = MappingRuleParams<any, any>;
 
 describe('MappingRule', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
   describe('Constructor validation', () => {
     it('should create a rule with left path and right path', () => {
       const rule = new MappingRule({
@@ -192,6 +197,61 @@ describe('MappingRule', () => {
       expect(() => rule.literal).toThrow(
         'rule has no literal, check hasLiteral before calling literal()',
       );
+    });
+
+    it('should handle non-Error exceptions when parsing left path', () => {
+      // Save the original implementation
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      const originalParsePath = Parser.prototype.parsePath;
+
+      // Mock the parsePath method to throw a non-Error value
+      Parser.prototype.parsePath = vi.fn().mockImplementation(function () {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw 'This is a string exception, not an Error';
+      });
+
+      // Create a rule that should trigger the error handling
+      expect(
+        () =>
+          new MappingRule({
+            left: 'user.problematic',
+            right: 'person.name',
+          }),
+      ).toThrow(/Left: This is a string exception, not an Error/);
+
+      // Restore the original implementation
+      Parser.prototype.parsePath = originalParsePath;
+    });
+
+    it('should handle non-Error exceptions when parsing right path', () => {
+      // Save the original implementation
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      const originalParsePath = Parser.prototype.parsePath;
+      let parseCount = 0;
+
+      // Mock the parsePath method to throw a non-Error value
+      Parser.prototype.parsePath = vi.fn().mockImplementation(function () {
+        parseCount++;
+
+        if (parseCount <= 1) {
+          return [];
+        }
+
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw 'This is a string exception, not an Error';
+      });
+
+      // Create a rule that should trigger the error handling
+      expect(
+        () =>
+          new MappingRule({
+            left: 'user.name',
+            right: 'person.problematic',
+          }),
+      ).toThrow(/Right: This is a string exception, not an Error/);
+
+      // Restore the original implementation
+      Parser.prototype.parsePath = originalParsePath;
     });
   });
 
