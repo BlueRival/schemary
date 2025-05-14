@@ -38,7 +38,7 @@ type RightObjectType = z.infer<typeof RightObjectSchema>;
 // Test data
 const validLeftObject: LeftObjectType = {
   id: 123,
-  username: 'johndoe',
+  username: 'john doe',
   dob: '03/02/1981',
   age: 30,
   isActive: true,
@@ -46,7 +46,7 @@ const validLeftObject: LeftObjectType = {
 
 const validRightObject: RightObjectType = {
   identifier: 123,
-  user: 'johndoe',
+  user: 'john doe',
   dob: '1981-03-02',
   yearsOld: 30,
   active: true,

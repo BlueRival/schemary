@@ -61,87 +61,8 @@ export class Parser {
       break;
     }
 
-    // Validate if there are any unclosed brackets at the end
-    this.validateUnclosedBrackets(segments);
-
     this.segments = segments;
     return segments;
-  }
-
-  /**
-   * Validates if there are any unclosed brackets in the parsed segments
-   * @param segments The parsed path segments
-   * @throws ParseError if unclosed brackets are found
-   */
-  private validateUnclosedBrackets(segments: PathSegment[]): void {
-    // Only validate if we have at least one segment
-    if (segments.length === 0) {
-      return;
-    }
-
-    const lastSegment = segments[segments.length - 1];
-
-    // We only need to check ObjectFieldSegmentClass segments for bracket issues
-    if (!(lastSegment instanceof ObjectFieldSegmentClass)) {
-      return;
-    }
-
-    const { name, sourceText } = lastSegment;
-
-    // Check for unclosed single brackets
-    this.validateBracketPairs(
-      name,
-      sourceText,
-      '[',
-      ']',
-      /\\\[/g,
-      /\[/g,
-      'Unclosed bracket in path',
-    );
-
-    // Check for unclosed double brackets (array slice)
-    this.validateBracketPairs(
-      name,
-      sourceText,
-      '[[',
-      ']]',
-      /\\\[\[/g,
-      /\[\[/g,
-      'Unclosed array slice bracket in path',
-    );
-  }
-
-  /**
-   * Helper method to validate bracket pairs of different types
-   * @param name The field name to check for bracket patterns
-   * @param text The original field text with escape sequences
-   * @param openPattern The opening bracket pattern to check
-   * @param closePattern The closing bracket pattern to check
-   * @param escapedRegex Regex to match escaped opening brackets
-   * @param openRegex Regex to match opening brackets
-   * @param errorMessage Error message to throw if validation fails
-   * @throws ParseError if bracket validation fails
-   */
-  private validateBracketPairs(
-    name: string,
-    text: string,
-    openPattern: string,
-    closePattern: string,
-    escapedRegex: RegExp,
-    openRegex: RegExp,
-    errorMessage: string,
-  ): void {
-    // Check if we have opening brackets without matching closing brackets
-    if (name.includes(openPattern) && !name.includes(closePattern)) {
-      // Count how many escaped brackets we have
-      const escapedCount = (text.match(escapedRegex) || []).length;
-      const openCount = (name.match(openRegex) || []).length;
-
-      // If there are open brackets without matching close brackets
-      if (openCount > escapedCount) {
-        throw new ParseError(errorMessage, this.position);
-      }
-    }
   }
 
   /**
