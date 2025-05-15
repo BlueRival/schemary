@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from './compile.js';
 import * as planModule from './plan.js';
-import { ObjectFieldSegmentClass } from './parser/ast/objectFieldSegment.class.js';
+import { ObjectIndexSegment } from './parser/ast/objectIndexSegment.class.js';
 import { MappingRule } from './plan.js';
 
 type MappingRuleAny = MappingRule<any, any>;
@@ -36,31 +36,31 @@ describe('Mapping Compiler', () => {
       // Check first rule
       let leftPath = expectLeftPath(plan.rules[0]);
       expect(leftPath).toHaveLength(2);
-      expect(leftPath[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((leftPath[0] as ObjectFieldSegmentClass).name).toBe('user');
-      expect(leftPath[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((leftPath[1] as ObjectFieldSegmentClass).name).toBe('firstName');
+      expect(leftPath[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((leftPath[0] as ObjectIndexSegment).name).toBe('user');
+      expect(leftPath[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((leftPath[1] as ObjectIndexSegment).name).toBe('firstName');
 
       leftPath = expectLeftPath(plan.rules[0]);
       expect(leftPath).toHaveLength(2);
-      expect(leftPath[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((leftPath[0] as ObjectFieldSegmentClass).name).toBe('user');
-      expect(leftPath[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((leftPath[1] as ObjectFieldSegmentClass).name).toBe('firstName');
+      expect(leftPath[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((leftPath[0] as ObjectIndexSegment).name).toBe('user');
+      expect(leftPath[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((leftPath[1] as ObjectIndexSegment).name).toBe('firstName');
 
       let rightPath = expectRightPath(plan.rules[0]);
       expect(rightPath).toHaveLength(2);
-      expect(rightPath[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((rightPath[0] as ObjectFieldSegmentClass).name).toBe('person');
-      expect(rightPath[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((rightPath[1] as ObjectFieldSegmentClass).name).toBe('givenName');
+      expect(rightPath[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((rightPath[0] as ObjectIndexSegment).name).toBe('person');
+      expect(rightPath[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((rightPath[1] as ObjectIndexSegment).name).toBe('givenName');
 
       rightPath = expectRightPath(plan.rules[1]);
       expect(rightPath).toHaveLength(2);
-      expect(rightPath[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((rightPath[0] as ObjectFieldSegmentClass).name).toBe('person');
-      expect(rightPath[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((rightPath[1] as ObjectFieldSegmentClass).name).toBe('familyName');
+      expect(rightPath[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((rightPath[0] as ObjectIndexSegment).name).toBe('person');
+      expect(rightPath[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((rightPath[1] as ObjectIndexSegment).name).toBe('familyName');
     });
   });
 

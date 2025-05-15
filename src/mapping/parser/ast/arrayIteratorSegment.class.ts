@@ -1,14 +1,17 @@
-import { PathSegment } from './pathSegment.class.js';
 import { JSONType, JSONArray } from '../../../types.js';
 import { clone } from '../../../schema.js';
+import {
+  AbstractPathIteratorSegment,
+  IterateResult,
+} from './abstractPathIteratorSegment.class.js';
 
-export class ArraySegmentClass extends PathSegment {
+export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
   constructor(
-    text: string,
+    sourceText: string,
     public readonly start: number,
     public readonly size?: number,
   ) {
-    super(text);
+    super(sourceText);
   }
 
   private _getIterate(
@@ -61,19 +64,20 @@ export class ArraySegmentClass extends PathSegment {
     source.map((item) => handler(item));
   }
 
-  protected _getValue(source: JSONType): JSONArray | undefined {
-    // only works on truthy objects (including arrays)
+  public getValue(source: JSONArray): IterateResult {
+    const result: JSONArray = [];
+
+    // runtime-check
     if (!Array.isArray(source)) {
-      return undefined;
+      source = [];
     }
-    const output: JSONArray = [];
 
-    this._getIterate(source, (item) => output.push(clone(item)));
+    this._getIterate(source, (item) => result.push(clone(item)));
 
-    return output;
+    return { result, iterate: true };
   }
 
-  protected _setValue(
+  public setValue(
     destination: JSONType | undefined,
     value: JSONType | undefined,
   ): JSONArray {

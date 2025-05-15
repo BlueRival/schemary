@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { ObjectFieldSegmentClass } from './objectFieldSegment.class.js';
+import { ObjectIndexSegment } from './objectIndexSegment.class.js';
 import { JSONType } from '../../../types.js';
 
 describe('ObjectFieldSegment', () => {
   describe('Construction', () => {
     it('should create an object field segment', () => {
-      const segment = new ObjectFieldSegmentClass('user', 'user');
+      const segment = new ObjectIndexSegment('user', 'user');
       expect(segment.name).toBe('user');
       expect(segment.sourceText).toBe('user');
     });
 
     it('should create an object field segment with escaped name', () => {
-      const segment = new ObjectFieldSegmentClass('\\[field\\]', '[field]');
+      const segment = new ObjectIndexSegment('\\[field\\]', '[field]');
       expect(segment.name).toBe('[field]');
       expect(segment.sourceText).toBe('\\[field\\]');
     });
@@ -25,9 +25,9 @@ describe('ObjectFieldSegment', () => {
       expected: JSONType | undefined,
     ) => {
       it(testName, () => {
-        const segment = new ObjectFieldSegmentClass(fieldName, fieldName);
-        const result = segment['_getValue'](source);
-        expect(result).toEqual(expected);
+        const segment = new ObjectIndexSegment(fieldName, fieldName);
+        const result = segment.getValue(source);
+        expect(result).toStrictEqual(expected);
       });
     };
 
@@ -86,68 +86,70 @@ describe('ObjectFieldSegment', () => {
 
   describe('_setValue method', () => {
     it('should set field on existing object', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const destination = { age: 30 };
       const value = 'John';
 
-      const result = segment['_setValue'](destination, value);
-      expect(result).toEqual({ age: 30, name: 'John' });
+      const result = segment.setValue(destination, value);
+      expect(result).toStrictEqual({ age: 30, name: 'John' });
     });
 
     it('should update existing field', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const destination = { name: 'Jane', age: 30 };
       const value = 'John';
 
-      const result = segment['_setValue'](destination, value);
-      expect(result).toEqual({ name: 'John', age: 30 });
+      const result = segment.setValue(destination, value);
+      expect(result).toStrictEqual({ name: 'John', age: 30 });
     });
 
     it('should create object if destination is undefined', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const value = 'John';
 
-      const result = segment['_setValue'](undefined, value);
-      expect(result).toEqual({ name: 'John' });
+      const result = segment.setValue(undefined, value);
+      expect(result).toStrictEqual({ name: 'John' });
     });
 
     it('should create object if destination is null', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const destination = null as unknown as JSONType;
       const value = 'John';
 
-      const result = segment['_setValue'](destination, value);
-      expect(result).toEqual({ name: 'John' });
+      const result = segment.setValue(destination, value);
+      expect(result).toStrictEqual({ name: 'John' });
     });
 
     it('should create object if destination is primitive', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const destination = 'not an object' as unknown as JSONType;
       const value = 'John';
 
-      const result = segment['_setValue'](destination, value);
-      expect(result).toEqual({ name: 'John' });
+      const result = segment.setValue(destination, value);
+      expect(result).toStrictEqual({ name: 'John' });
     });
 
     it('should set field on array', () => {
-      const segment = new ObjectFieldSegmentClass('customProp', 'customProp');
+      const segment = new ObjectIndexSegment('customProp', 'customProp');
       const destination = [1, 2, 3] as unknown as JSONType;
       const value = 'custom value';
 
-      const result = segment['_setValue'](destination, value);
+      const result = segment.setValue(destination, value);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      expect((result as unknown as any).customProp).toEqual('custom value');
+      expect((result as unknown as any).customProp).toStrictEqual(
+        'custom value',
+      );
       expect(Array.isArray(result)).toBe(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect((result as unknown as any)[0]).toBe(1);
     });
 
     it('should set value to undefined', () => {
-      const segment = new ObjectFieldSegmentClass('name', 'name');
+      const segment = new ObjectIndexSegment('name', 'name');
       const destination = { name: 'John', age: 30 };
 
-      const result = segment['_setValue'](destination, undefined);
-      expect(result).toEqual({ name: undefined, age: 30 });
+      const result = segment.setValue(destination, undefined);
+      expect(result).toStrictEqual({ name: undefined, age: 30 });
     });
   });
 
@@ -168,11 +170,11 @@ describe('ObjectFieldSegment', () => {
       ];
 
       for (const fieldName of specialFieldNames) {
-        const segment = new ObjectFieldSegmentClass(fieldName, fieldName);
+        const segment = new ObjectIndexSegment(fieldName, fieldName);
         const obj = {} as JSONType;
         const value = 'test value';
 
-        const result = segment['_setValue'](obj, value);
+        const result = segment.setValue(obj, value);
         expect((result as Record<string, string>)[fieldName]).toBe(value);
       }
     });
@@ -200,11 +202,11 @@ describe('ObjectFieldSegment', () => {
       ];
 
       for (const keyword of reservedKeywords) {
-        const segment = new ObjectFieldSegmentClass(keyword, keyword);
+        const segment = new ObjectIndexSegment(keyword, keyword);
         const obj = {} as JSONType;
         const value = 'test value';
 
-        const result = segment['_setValue'](obj, value);
+        const result = segment.setValue(obj, value);
         expect((result as Record<string, string>)[keyword]).toBe(value);
       }
     });

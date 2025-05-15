@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Parser, ParseError } from './core.js';
-import { ObjectFieldSegmentClass } from './ast/objectFieldSegment.class.js';
+import { ObjectIndexSegment } from './ast/objectIndexSegment.class.js';
 import { ArrayIndexSegmentClass } from './ast/arrayIndexSegment.class.js';
-import { ArraySegmentClass } from './ast/arraySegment.class.js';
-import { PathSegment } from './ast/pathSegment.class.js';
+import { ArrayIteratorSegment } from './ast/arrayIteratorSegment.class.js';
+import { AbstractPathIndexSegment } from './ast/abstractPathIndexSegment.class.js';
 
 describe('Path Parser', () => {
   describe('Field segments', () => {
@@ -12,8 +12,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(1);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('user');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('user');
     });
 
     it('should parse multiple field names separated by dots', () => {
@@ -21,12 +21,12 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('user');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('profile');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('name');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('user');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('profile');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('name');
     });
 
     it('should handle escaped characters in field names', () => {
@@ -34,10 +34,10 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('[field]');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('[field]');
     });
 
     it('should handle other escaped characters in field names', () => {
@@ -45,11 +45,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
       // Other escaped characters should preserve the backslash and character
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('fieldname');
+      expect((segments[1] as ObjectIndexSegment).name).toBe('fieldname');
     });
   });
 
@@ -59,8 +59,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
     });
@@ -70,8 +70,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(-1);
     });
@@ -114,8 +114,8 @@ describe('Path Parser', () => {
         const segments = parser.parsePath();
 
         expect(segments).toHaveLength(2);
-        expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
+        expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[0] as ObjectIndexSegment).name).toBe('users');
         expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
         expect((segments[1] as ArrayIndexSegmentClass).index).toBe(-1);
       });
@@ -126,8 +126,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('matrix');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('matrix');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
@@ -141,11 +141,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(1);
-      expect((segments[1] as ArraySegmentClass).size).toBeUndefined();
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(1);
+      expect((segments[1] as ArrayIteratorSegment).size).toBeUndefined();
     });
 
     it('should parse slice with start and end', () => {
@@ -153,11 +153,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(0);
-      expect((segments[1] as ArraySegmentClass).size).toBe(3);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[1] as ArrayIteratorSegment).size).toBe(3);
     });
 
     it('should parse negative slice indices', () => {
@@ -165,11 +165,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(-2);
-      expect((segments[1] as ArraySegmentClass).size).toBe(-1);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(-2);
+      expect((segments[1] as ArrayIteratorSegment).size).toBe(-1);
     });
   });
 
@@ -179,35 +179,35 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('users');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('users');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('name');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('name');
     });
 
     it('should parse complex path with field, slice, and field and cache', () => {
       const parser = new Parser('departments[0].employees[[0,2]].name');
-      let segments: PathSegment[] = [];
+      let segments: AbstractPathIndexSegment[] = [];
 
       for (let i = 0; i < 3; i++) {
         segments = parser.parsePath();
 
         expect(segments).toHaveLength(5);
-        expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[0] as ObjectFieldSegmentClass).name).toBe(
+        expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[0] as ObjectIndexSegment).name).toBe(
           'departments',
         );
         expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
         expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
-        expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[2] as ObjectFieldSegmentClass).name).toBe('employees');
-        expect(segments[3]).toBeInstanceOf(ArraySegmentClass);
-        expect((segments[3] as ArraySegmentClass).start).toBe(0);
-        expect((segments[3] as ArraySegmentClass).size).toBe(2);
-        expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[4] as ObjectFieldSegmentClass).name).toBe('name');
+        expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[2] as ObjectIndexSegment).name).toBe('employees');
+        expect(segments[3]).toBeInstanceOf(ArrayIteratorSegment);
+        expect((segments[3] as ArrayIteratorSegment).start).toBe(0);
+        expect((segments[3] as ArrayIteratorSegment).size).toBe(2);
+        expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[4] as ObjectIndexSegment).name).toBe('name');
       }
     });
 
@@ -218,31 +218,31 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(12);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('config');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('mappings');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('config');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('mappings');
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('sources');
-      expect(segments[4]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[4] as ArraySegmentClass).start).toBe(0);
-      expect((segments[4] as ArraySegmentClass).size).toBe(3);
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('fields');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('sources');
+      expect(segments[4]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[4] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[4] as ArrayIteratorSegment).size).toBe(3);
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('fields');
       expect(segments[6]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[6] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('validation');
-      expect(segments[8]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[8] as ObjectFieldSegmentClass).name).toBe('rules');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('validation');
+      expect(segments[8]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[8] as ObjectIndexSegment).name).toBe('rules');
       expect(segments[9]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[9] as ArrayIndexSegmentClass).index).toBe(2);
-      expect(segments[10]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[10] as ObjectFieldSegmentClass).name).toBe('params');
-      expect(segments[11]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[11] as ObjectFieldSegmentClass).name).toBe('min');
+      expect(segments[10]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[10] as ObjectIndexSegment).name).toBe('params');
+      expect(segments[11]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[11] as ObjectIndexSegment).name).toBe('min');
     });
 
     it('should parse path with heavily escaped field names', () => {
@@ -252,20 +252,20 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(5);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('[complex]');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('[complex]');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe(
         '[field.with]',
       );
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe(
         '[multiple][escapes]',
       );
-      expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[4] as ObjectFieldSegmentClass).name).toBe('value');
+      expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[4] as ObjectIndexSegment).name).toBe('value');
     });
 
     it('should parse multiple-level array indexing with mixed indices', () => {
@@ -273,8 +273,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(6);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('matrix');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('matrix');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
@@ -292,26 +292,26 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(7);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(0);
-      expect((segments[1] as ArraySegmentClass).size).toBeUndefined();
-      expect(segments[2]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[2] as ArraySegmentClass).start).toBe(0);
-      expect((segments[2] as ArraySegmentClass).size).toBe(5);
-      expect(segments[3]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[3] as ArraySegmentClass).start).toBe(1);
-      expect((segments[3] as ArraySegmentClass).size).toBeUndefined();
-      expect(segments[4]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[4] as ArraySegmentClass).start).toBe(0);
-      expect((segments[4] as ArraySegmentClass).size).toBe(-1);
-      expect(segments[5]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[5] as ArraySegmentClass).start).toBe(-2);
-      expect((segments[5] as ArraySegmentClass).size).toBeUndefined();
-      expect(segments[6]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[6] as ArraySegmentClass).start).toBe(0);
-      expect((segments[6] as ArraySegmentClass).size).toBe(0);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[1] as ArrayIteratorSegment).size).toBeUndefined();
+      expect(segments[2]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[2] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[2] as ArrayIteratorSegment).size).toBe(5);
+      expect(segments[3]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[3] as ArrayIteratorSegment).start).toBe(1);
+      expect((segments[3] as ArrayIteratorSegment).size).toBeUndefined();
+      expect(segments[4]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[4] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[4] as ArrayIteratorSegment).size).toBe(-1);
+      expect(segments[5]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[5] as ArrayIteratorSegment).start).toBe(-2);
+      expect((segments[5] as ArrayIteratorSegment).size).toBeUndefined();
+      expect(segments[6]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[6] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[6] as ArrayIteratorSegment).size).toBe(0);
     });
 
     it('should parse nested arrays with multiple slices', () => {
@@ -319,18 +319,18 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(5);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe(
         'multiDimensional',
       );
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(0);
-      expect((segments[1] as ArraySegmentClass).size).toBe(3);
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[1] as ArrayIteratorSegment).size).toBe(3);
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[3] as ArraySegmentClass).start).toBe(1);
-      expect((segments[3] as ArraySegmentClass).size).toBe(4);
+      expect(segments[3]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[3] as ArrayIteratorSegment).start).toBe(1);
+      expect((segments[3] as ArrayIteratorSegment).size).toBe(4);
       expect(segments[4]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[4] as ArrayIndexSegmentClass).index).toBe(-1);
     });
@@ -340,22 +340,22 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(8);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('object');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('123field');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('0');
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('true');
-      expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[4] as ObjectFieldSegmentClass).name).toBe('null');
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('undefined');
-      expect(segments[6]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[6] as ObjectFieldSegmentClass).name).toBe('[]');
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('{}');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('object');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('123field');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('0');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('true');
+      expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[4] as ObjectIndexSegment).name).toBe('null');
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('undefined');
+      expect(segments[6]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[6] as ObjectIndexSegment).name).toBe('[]');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('{}');
     });
 
     it('should parse extremely long path with many segments', () => {
@@ -399,8 +399,8 @@ describe('Path Parser', () => {
         'ee',
       ];
       for (let i = 0; i < segments.length; i++) {
-        expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[i] as ObjectFieldSegmentClass).name).toBe(
+        expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[i] as ObjectIndexSegment).name).toBe(
           expectedNames[i],
         );
       }
@@ -411,16 +411,16 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(5);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('counts');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('count_1');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('count_2');
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('count_10');
-      expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[4] as ObjectFieldSegmentClass).name).toBe('count_999');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('counts');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('count_1');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('count_2');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('count_10');
+      expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[4] as ObjectIndexSegment).name).toBe('count_999');
     });
 
     it('should parse multiple array accesses in sequence', () => {
@@ -428,8 +428,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(11);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('arrays');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('arrays');
       for (let i = 1; i < segments.length; i++) {
         expect(segments[i]).toBeInstanceOf(ArrayIndexSegmentClass);
         expect((segments[i] as ArrayIndexSegmentClass).index).toBe(i - 1);
@@ -443,25 +443,25 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(9);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('users');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('users');
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('posts');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('posts');
       expect(segments[4]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[4] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('comments');
-      expect(segments[6]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[6] as ArraySegmentClass).start).toBe(0);
-      expect((segments[6] as ArraySegmentClass).size).toBe(5);
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('author');
-      expect(segments[8]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[8] as ObjectFieldSegmentClass).name).toBe('name');
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('comments');
+      expect(segments[6]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[6] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[6] as ArrayIteratorSegment).size).toBe(5);
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('author');
+      expect(segments[8]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[8] as ObjectIndexSegment).name).toBe('name');
     });
 
     it('should parse field names with dots and brackets that need escaping and literal \\ in field names', () => {
@@ -469,14 +469,14 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('root');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('root');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(
         'field\\.with.dots',
       );
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('array.[0]');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('array.[0]');
     });
 
     it('should parse field names with dots and brackets that need escaping', () => {
@@ -484,14 +484,14 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('root');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('root');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(
         'field.with.dots',
       );
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('array.[0]');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('array.[0]');
     });
 
     it('should parse extremely long field names', () => {
@@ -501,12 +501,12 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('root');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(longFieldName);
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('value');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('root');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(longFieldName);
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('value');
     });
 
     it('should parse paths that mix positive and negative indices', () => {
@@ -514,8 +514,8 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(7);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('alternating');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('alternating');
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
@@ -535,11 +535,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('bigArray');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(0);
-      expect((segments[1] as ArraySegmentClass).size).toBe(1000);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('bigArray');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[1] as ArrayIteratorSegment).size).toBe(1000);
     });
 
     it('should parse field names that are JavaScript keywords', () => {
@@ -562,8 +562,8 @@ describe('Path Parser', () => {
         'finally',
       ];
       for (let i = 0; i < segments.length; i++) {
-        expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[i] as ObjectFieldSegmentClass).name).toBe(expected[i]);
+        expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[i] as ObjectIndexSegment).name).toBe(expected[i]);
       }
     });
 
@@ -574,8 +574,8 @@ describe('Path Parser', () => {
       expect(segments).toHaveLength(6);
       const expected = ['data', 'üniçödé', '字段名', '🔥', '⚡️', '🚀'];
       for (let i = 0; i < segments.length; i++) {
-        expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[i] as ObjectFieldSegmentClass).name).toBe(expected[i]);
+        expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[i] as ObjectIndexSegment).name).toBe(expected[i]);
       }
     });
 
@@ -586,26 +586,26 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(9);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('levels');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('levels');
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('sublevel');
-      expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[4] as ObjectFieldSegmentClass).name).toBe('items');
-      expect(segments[5]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[5] as ArraySegmentClass).start).toBe(0);
-      expect((segments[5] as ArraySegmentClass).size).toBe(3);
-      expect(segments[6]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[6] as ObjectFieldSegmentClass).name).toBe('tags');
-      expect(segments[7]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[7] as ArraySegmentClass).start).toBe(-2);
-      expect((segments[7] as ArraySegmentClass).size).toBeUndefined();
-      expect(segments[8]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[8] as ObjectFieldSegmentClass).name).toBe('name');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('sublevel');
+      expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[4] as ObjectIndexSegment).name).toBe('items');
+      expect(segments[5]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[5] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[5] as ArrayIteratorSegment).size).toBe(3);
+      expect(segments[6]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[6] as ObjectIndexSegment).name).toBe('tags');
+      expect(segments[7]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[7] as ArrayIteratorSegment).start).toBe(-2);
+      expect((segments[7] as ArrayIteratorSegment).size).toBeUndefined();
+      expect(segments[8]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[8] as ObjectIndexSegment).name).toBe('name');
     });
 
     it('should parse paths with repeating patterns', () => {
@@ -620,8 +620,8 @@ describe('Path Parser', () => {
 
       for (let i = 0; i < segments.length; i++) {
         if (i % 3 === 0 || i % 3 === 2) {
-          expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-          expect((segments[i] as ObjectFieldSegmentClass).name).toBe(
+          expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+          expect((segments[i] as ObjectIndexSegment).name).toBe(
             fieldNames[fieldIndex],
           );
           fieldIndex++;
@@ -640,14 +640,14 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(5);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('weird');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('[[0,1]]');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('[0]');
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('array');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('weird');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('[[0,1]]');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('[0]');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('array');
       expect(segments[4]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[4] as ArrayIndexSegmentClass).index).toBe(0);
     });
@@ -659,31 +659,31 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(12);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('users');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('users');
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('friends');
-      expect(segments[4]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[4] as ArraySegmentClass).start).toBe(0);
-      expect((segments[4] as ArraySegmentClass).size).toBe(10);
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('posts');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('friends');
+      expect(segments[4]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[4] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[4] as ArrayIteratorSegment).size).toBe(10);
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('posts');
       expect(segments[6]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[6] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('comments');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('comments');
       expect(segments[8]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[8] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[9]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[9] as ObjectFieldSegmentClass).name).toBe('author');
-      expect(segments[10]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[10] as ObjectFieldSegmentClass).name).toBe('profile');
-      expect(segments[11]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[11] as ObjectFieldSegmentClass).name).toBe('avatar');
+      expect(segments[9]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[9] as ObjectIndexSegment).name).toBe('author');
+      expect(segments[10]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[10] as ObjectIndexSegment).name).toBe('profile');
+      expect(segments[11]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[11] as ObjectIndexSegment).name).toBe('avatar');
     });
 
     it('should parse array slices that would select all elements', () => {
@@ -691,11 +691,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(0);
-      expect((segments[1] as ArraySegmentClass).size).toBeUndefined();
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[1] as ArrayIteratorSegment).size).toBeUndefined();
     });
 
     it('should parse array slices with only negative indices', () => {
@@ -703,11 +703,11 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('list');
-      expect(segments[1]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[1] as ArraySegmentClass).start).toBe(-3);
-      expect((segments[1] as ArraySegmentClass).size).toBe(-1);
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('list');
+      expect(segments[1]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[1] as ArrayIteratorSegment).start).toBe(-3);
+      expect((segments[1] as ArrayIteratorSegment).size).toBe(-1);
     });
 
     it('should parse field names with underscore patterns', () => {
@@ -717,16 +717,16 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(4);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('__proto__');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('constructor');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('__proto__');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('constructor');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe(
         '__defineGetter__',
       );
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe(
         '__lookupSetter__',
       );
     });
@@ -739,8 +739,8 @@ describe('Path Parser', () => {
 
       expect(segments).toHaveLength(10);
       for (let i = 0; i < segments.length; i++) {
-        expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[i] as ObjectFieldSegmentClass).name).toBe(
+        expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[i] as ObjectIndexSegment).name).toBe(
           `level${i + 1}`,
         );
       }
@@ -751,12 +751,12 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(3);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('fieldname');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('fieldname');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe(
         'pathtoproperty',
       );
     });
@@ -767,8 +767,8 @@ describe('Path Parser', () => {
 
       expect(segments).toHaveLength(10);
       for (let i = 0; i < segments.length; i++) {
-        expect(segments[i]).toBeInstanceOf(ObjectFieldSegmentClass);
-        expect((segments[i] as ObjectFieldSegmentClass).name).toBe(String(i));
+        expect(segments[i]).toBeInstanceOf(ObjectIndexSegment);
+        expect((segments[i] as ObjectIndexSegment).name).toBe(String(i));
       }
     });
 
@@ -779,36 +779,36 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(14);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(
         'transformations',
       );
       expect(segments[2]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[2] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('mapping');
-      expect(segments[4]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[4] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('mapping');
+      expect(segments[4]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[4] as ObjectIndexSegment).name).toBe(
         'sourceSchema',
       );
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('properties');
-      expect(segments[6]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[6] as ObjectFieldSegmentClass).name).toBe('user');
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('properties');
-      expect(segments[8]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[8] as ObjectFieldSegmentClass).name).toBe('addresses');
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('properties');
+      expect(segments[6]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[6] as ObjectIndexSegment).name).toBe('user');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('properties');
+      expect(segments[8]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[8] as ObjectIndexSegment).name).toBe('addresses');
       expect(segments[9]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[9] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[10]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[10] as ObjectFieldSegmentClass).name).toBe('properties');
-      expect(segments[11]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[11] as ObjectFieldSegmentClass).name).toBe('geo');
-      expect(segments[12]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[12] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[10]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[10] as ObjectIndexSegment).name).toBe('properties');
+      expect(segments[11]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[11] as ObjectIndexSegment).name).toBe('geo');
+      expect(segments[12]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[12] as ObjectIndexSegment).name).toBe(
         'coordinates',
       );
       expect(segments[13]).toBeInstanceOf(ArrayIndexSegmentClass);
@@ -822,44 +822,44 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(17);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe(
         'translations',
       );
       expect(segments[1]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[1] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('config');
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('mappings');
-      expect(segments[4]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[4] as ArraySegmentClass).start).toBe(0);
-      expect((segments[4] as ArraySegmentClass).size).toBe(5);
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('fields');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('config');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('mappings');
+      expect(segments[4]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[4] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[4] as ArrayIteratorSegment).size).toBe(5);
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('fields');
       expect(segments[6]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[6] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('[escaped]');
-      expect(segments[8]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[8] as ObjectFieldSegmentClass).name).toBe('nested');
-      expect(segments[9]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[9] as ObjectFieldSegmentClass).name).toBe('arrays');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('[escaped]');
+      expect(segments[8]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[8] as ObjectIndexSegment).name).toBe('nested');
+      expect(segments[9]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[9] as ObjectIndexSegment).name).toBe('arrays');
       expect(segments[10]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[10] as ArrayIndexSegmentClass).index).toBe(0);
       expect(segments[11]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[11] as ArrayIndexSegmentClass).index).toBe(1);
       expect(segments[12]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[12] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[13]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[13] as ObjectFieldSegmentClass).name).toBe('slices');
-      expect(segments[14]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[14] as ArraySegmentClass).start).toBe(0);
-      expect((segments[14] as ArraySegmentClass).size).toBe(3);
+      expect(segments[13]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[13] as ObjectIndexSegment).name).toBe('slices');
+      expect(segments[14]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[14] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[14] as ArrayIteratorSegment).size).toBe(3);
       expect(segments[15]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[15] as ArrayIndexSegmentClass).index).toBe(-2);
-      expect(segments[16]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[16] as ObjectFieldSegmentClass).name).toBe('end');
+      expect(segments[16]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[16] as ObjectIndexSegment).name).toBe('end');
     });
 
     it('should parse an exceptional case with complex combinations of segments', () => {
@@ -869,46 +869,46 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(19);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('meta');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('schema');
-      expect(segments[2]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[2] as ObjectFieldSegmentClass).name).toBe('translation');
-      expect(segments[3]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[3] as ObjectFieldSegmentClass).name).toBe('config');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('meta');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('schema');
+      expect(segments[2]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[2] as ObjectIndexSegment).name).toBe('translation');
+      expect(segments[3]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[3] as ObjectIndexSegment).name).toBe('config');
       expect(segments[4]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[4] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[5]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[5] as ObjectFieldSegmentClass).name).toBe('mappings');
+      expect(segments[5]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[5] as ObjectIndexSegment).name).toBe('mappings');
       expect(segments[6]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[6] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[7]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[7] as ObjectFieldSegmentClass).name).toBe('sources');
-      expect(segments[8]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[8] as ArraySegmentClass).start).toBe(0);
-      expect((segments[8] as ArraySegmentClass).size).toBe(3);
-      expect(segments[9]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[9] as ObjectFieldSegmentClass).name).toBe('destination');
-      expect(segments[10]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[10] as ObjectFieldSegmentClass).name).toBe('fields');
+      expect(segments[7]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[7] as ObjectIndexSegment).name).toBe('sources');
+      expect(segments[8]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[8] as ArrayIteratorSegment).start).toBe(0);
+      expect((segments[8] as ArrayIteratorSegment).size).toBe(3);
+      expect(segments[9]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[9] as ObjectIndexSegment).name).toBe('destination');
+      expect(segments[10]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[10] as ObjectIndexSegment).name).toBe('fields');
       expect(segments[11]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[11] as ArrayIndexSegmentClass).index).toBe(-1);
-      expect(segments[12]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[12] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[12]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[12] as ObjectIndexSegment).name).toBe(
         'validations',
       );
       expect(segments[13]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[13] as ArrayIndexSegmentClass).index).toBe(0);
-      expect(segments[14]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[14] as ObjectFieldSegmentClass).name).toBe('rules');
-      expect(segments[15]).toBeInstanceOf(ArraySegmentClass);
-      expect((segments[15] as ArraySegmentClass).start).toBe(1);
-      expect((segments[15] as ArraySegmentClass).size).toBe(3);
-      expect(segments[16]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[16] as ObjectFieldSegmentClass).name).toBe('parameters');
-      expect(segments[17]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[17] as ObjectFieldSegmentClass).name).toBe('range');
+      expect(segments[14]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[14] as ObjectIndexSegment).name).toBe('rules');
+      expect(segments[15]).toBeInstanceOf(ArrayIteratorSegment);
+      expect((segments[15] as ArrayIteratorSegment).start).toBe(1);
+      expect((segments[15] as ArrayIteratorSegment).size).toBe(3);
+      expect(segments[16]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[16] as ObjectIndexSegment).name).toBe('parameters');
+      expect(segments[17]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[17] as ObjectIndexSegment).name).toBe('range');
       expect(segments[18]).toBeInstanceOf(ArrayIndexSegmentClass);
       expect((segments[18] as ArrayIndexSegmentClass).index).toBe(0);
     });
@@ -941,10 +941,10 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe('[field]');
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe('[field]');
     });
 
     it('should handle dots inside escaped brackets in field names', () => {
@@ -953,10 +953,10 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(
         '[field.name]',
       );
     });
@@ -966,10 +966,10 @@ describe('Path Parser', () => {
       const segments = parser.parsePath();
 
       expect(segments).toHaveLength(2);
-      expect(segments[0]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[0] as ObjectFieldSegmentClass).name).toBe('data');
-      expect(segments[1]).toBeInstanceOf(ObjectFieldSegmentClass);
-      expect((segments[1] as ObjectFieldSegmentClass).name).toBe(
+      expect(segments[0]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[0] as ObjectIndexSegment).name).toBe('data');
+      expect(segments[1]).toBeInstanceOf(ObjectIndexSegment);
+      expect((segments[1] as ObjectIndexSegment).name).toBe(
         '[field..with...dots]',
       );
     });

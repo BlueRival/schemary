@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ArrayIndexSegmentClass } from './arrayIndexSegment.class.js';
-import { PathSegment } from './pathSegment.class.js';
 import { JSONType } from '../../../types.js';
+import { extractValue, injectValue } from '../utilities.js';
 
 describe('ArrayIndexSegment', () => {
   describe('Construction', () => {
@@ -30,9 +30,9 @@ describe('ArrayIndexSegment', () => {
         const segment = new ArrayIndexSegmentClass(`[${index}]`, index);
 
         if (expectError) {
-          expect(() => PathSegment.getValue(source, [segment])).toThrow();
+          expect(() => extractValue(source, [segment])).toThrow();
         } else {
-          const result = PathSegment.getValue(source, [segment]);
+          const result = extractValue(source, [segment]);
           expect(result).toEqual(expected);
         }
       });
@@ -114,7 +114,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = PathSegment.setValue(destination, value, [segment]);
+      const result = injectValue(destination, value, [segment]);
       expect(result).toEqual(['a', 'x', 'c']);
     });
 
@@ -123,7 +123,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = PathSegment.setValue(destination, value, [segment]);
+      const result = injectValue(destination, value, [segment]);
       expect(result).toEqual(['a', 'b', 'x']);
     });
 
@@ -131,7 +131,7 @@ describe('ArrayIndexSegment', () => {
       const segment = new ArrayIndexSegmentClass('[1]', 1);
       const value = 'x';
 
-      const result = PathSegment.setValue(undefined, value, [segment]);
+      const result = injectValue(undefined, value, [segment]);
       // Should create [undefined, 'x']
       expect(Array.isArray(result)).toBe(true);
       expect((result as any[]).length).toBe(2);
@@ -143,7 +143,7 @@ describe('ArrayIndexSegment', () => {
       const destination = 'not an array' as unknown as JSONType;
       const value = 'x';
 
-      const result = PathSegment.setValue(destination, value, [segment]);
+      const result = injectValue(destination, value, [segment]);
       // Should create [undefined, 'x']
       expect(Array.isArray(result)).toBe(true);
       expect((result as any[]).length).toBe(2);
@@ -154,7 +154,7 @@ describe('ArrayIndexSegment', () => {
       const segment = new ArrayIndexSegmentClass('[-10]', -10);
       const destination = ['a', 'b', 'c'];
 
-      expect(() => PathSegment.setValue(destination, 'x', [segment])).toThrow(
+      expect(() => injectValue(destination, 'x', [segment])).toThrow(
         /Reverse array index out of bounds/,
       );
     });
@@ -164,7 +164,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = PathSegment.setValue(destination, value, [segment]);
+      const result = injectValue(destination, value, [segment]);
       expect(Array.isArray(result)).toBe(true);
       expect((result as any[]).length).toBe(6);
       expect((result as any[])[5]).toBe('x');

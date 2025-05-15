@@ -1064,8 +1064,213 @@ describe('JSON Schema Mapping', () => {
     },
   ]);
 
-  // TODO:
-  // generateTests('complex mapping', []);
+  generateTests('complex mapping', [
+    {
+      only,
+      name: 'should map nested array slices for users, orders, and items',
+      rules: [
+        {
+          left: 'users[[0]].orders[[0,1]]',
+          right: 'users[[0]].orders',
+        },
+        {
+          left: 'users[[0]].orders[[0,1]].items[[0,3]]',
+          right: 'users[[0]].orders[[0,1]].items',
+        },
+      ],
+      left: {
+        users: [
+          {
+            id: 1,
+            name: 'John',
+            orders: [
+              {
+                id: 101,
+                date: '2023-01-15',
+                items: [
+                  { id: 1001, name: 'Item 1', price: 10.99 },
+                  { id: 1002, name: 'Item 2', price: 20.99 },
+                  { id: 1003, name: 'Item 3', price: 30.99 },
+                  { id: 1004, name: 'Item 4', price: 40.99 },
+                  { id: 1005, name: 'Item 5', price: 50.99 },
+                ],
+              },
+              {
+                id: 102,
+                date: '2023-01-20',
+                items: [
+                  { id: 2001, name: 'Item A', price: 15.99 },
+                  { id: 2002, name: 'Item B', price: 25.99 },
+                  { id: 2003, name: 'Item C', price: 35.99 },
+                ],
+              },
+              {
+                id: 103,
+                date: '2023-01-25',
+                items: [
+                  { id: 2501, name: 'Item D', price: 45.99 },
+                  { id: 2502, name: 'Item E', price: 55.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: 'Jane',
+            orders: [
+              {
+                id: 201,
+                date: '2023-02-05',
+                items: [
+                  { id: 3001, name: 'Item X1', price: 100.99 },
+                  { id: 3002, name: 'Item X2', price: 200.99 },
+                  { id: 3003, name: 'Item X3', price: 300.99 },
+                  { id: 3004, name: 'Item X4', price: 400.99 },
+                ],
+              },
+              {
+                id: 202,
+                date: '2023-02-10',
+                items: [
+                  { id: 4001, name: 'Item Y1', price: 150.99 },
+                  { id: 4002, name: 'Item Y2', price: 250.99 },
+                ],
+              },
+              {
+                id: 203,
+                date: '2023-02-15',
+                items: [{ id: 5001, name: 'Item Z1', price: 350.99 }],
+              },
+            ],
+          },
+          {
+            id: 3,
+            name: 'Robert',
+            orders: [
+              {
+                id: 301,
+                date: '2023-03-05',
+                items: [
+                  { id: 6001, name: 'Item P1', price: 120.99 },
+                  { id: 6002, name: 'Item P2', price: 220.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 4,
+            name: 'Emily',
+            orders: [
+              {
+                id: 401,
+                date: '2023-04-10',
+                items: [
+                  { id: 7001, name: 'Item Q1', price: 130.99 },
+                  { id: 7002, name: 'Item Q2', price: 230.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 5,
+            name: 'Michael',
+            orders: [],
+          },
+          {
+            id: 6,
+            name: 'Sarah',
+            orders: [],
+          },
+        ],
+      },
+      right: {
+        users: [
+          {
+            id: 1,
+            name: 'John',
+            orders: [
+              {
+                id: 101,
+                date: '2023-01-15',
+                items: [
+                  { id: 1001, name: 'Item 1', price: 10.99 },
+                  { id: 1002, name: 'Item 2', price: 20.99 },
+                  { id: 1003, name: 'Item 3', price: 30.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: 'Jane',
+            orders: [
+              {
+                id: 201,
+                date: '2023-02-05',
+                items: [
+                  { id: 3001, name: 'Item X1', price: 100.99 },
+                  { id: 3002, name: 'Item X2', price: 200.99 },
+                  { id: 3003, name: 'Item X3', price: 300.99 },
+                  { id: 3004, name: 'Item X4', price: 400.99 },
+                ],
+              },
+              {
+                id: 202,
+                date: '2023-02-10',
+                items: [
+                  { id: 4001, name: 'Item Y1', price: 150.99 },
+                  { id: 4002, name: 'Item Y2', price: 250.99 },
+                ],
+              },
+              {
+                id: 203,
+                date: '2023-02-15',
+                items: [{ id: 5001, name: 'Item Z1', price: 350.99 }],
+              },
+            ],
+          },
+          {
+            id: 3,
+            name: 'Robert',
+            orders: [
+              {
+                id: 301,
+                date: '2023-03-05',
+                items: [
+                  { id: 6001, name: 'Item P1', price: 120.99 },
+                  { id: 6002, name: 'Item P2', price: 220.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 4,
+            name: 'Emily',
+            orders: [
+              {
+                id: 401,
+                date: '2023-04-10',
+                items: [
+                  { id: 7001, name: 'Item Q1', price: 130.99 },
+                  { id: 7002, name: 'Item Q2', price: 230.99 },
+                ],
+              },
+            ],
+          },
+          {
+            id: 5,
+            name: 'Michael',
+            orders: [],
+          },
+          {
+            id: 6,
+            name: 'Sarah',
+            orders: [],
+          },
+        ],
+      },
+    },
+  ]);
 
   // Tests to ensure transform function is properly applied
   generateTests('transform function tests', [

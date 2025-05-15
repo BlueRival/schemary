@@ -1,23 +1,26 @@
-import { PathSegment } from './pathSegment.class.js';
 import { JSONType, JSONArray } from '../../../types.js';
+import {
+  AbstractPathIteratorSegment,
+  NoIterateResult,
+} from './abstractPathIteratorSegment.class.js';
 
 // Array index segment (e.g., [0], [-1])
-export class ArrayIndexSegmentClass extends PathSegment {
+export class ArrayIndexSegmentClass extends AbstractPathIteratorSegment {
   constructor(
-    text: string,
+    sourceText: string,
     public readonly index: number,
   ) {
-    super(text);
+    super(sourceText);
   }
 
   private _realIndex(arr: JSONArray): number {
     return this.index < 0 ? arr.length + this.index : this.index;
   }
 
-  protected _getValue(source: JSONType): JSONType | undefined {
+  public getValue(source: JSONArray): NoIterateResult {
     // only works on truthy objects (including arrays)
     if (!Array.isArray(source)) {
-      return undefined;
+      return { result: undefined, iterate: false };
     }
 
     const index = this._realIndex(source);
@@ -27,13 +30,13 @@ export class ArrayIndexSegmentClass extends PathSegment {
     }
 
     // we can pull fields out of objects, but also arrays, like the length field
-    return source[index];
+    return { result: source[index], iterate: false };
   }
 
-  protected _setValue(
-    destination: JSONType | undefined,
+  public setValue(
+    destination: JSONArray | undefined,
     value: JSONType | undefined,
-  ): JSONType | undefined {
+  ): JSONType {
     if (!Array.isArray(destination)) {
       destination = [];
     }

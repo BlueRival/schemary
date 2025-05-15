@@ -1,7 +1,9 @@
-import { PathSegment } from './ast/pathSegment.class.js';
+import { AbstractPathIndexSegment } from './ast/abstractPathIndexSegment.class.js';
 import { ArrayIndexSegmentClass } from './ast/arrayIndexSegment.class.js';
-import { ArraySegmentClass } from './ast/arraySegment.class.js';
-import { ObjectFieldSegmentClass } from './ast/objectFieldSegment.class.js';
+import { ArrayIteratorSegment } from './ast/arrayIteratorSegment.class.js';
+import { ObjectIndexSegment } from './ast/objectIndexSegment.class.js';
+import { AbstractPathSegment } from './ast/abstractPathSegment.class.js';
+import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
 
 export class ParseError extends Error {
   constructor(
@@ -14,14 +16,14 @@ export class ParseError extends Error {
 
 export class Parser {
   private position = 0;
-  private segments: PathSegment[] | null = null;
+  private segments: AbstractPathSegment[] | null = null;
 
   constructor(private readonly input: string) {}
 
   /**
    * Parse a path expression into a list of path segments
    */
-  parsePath(): PathSegment[] {
+  parsePath(): AbstractPathSegment[] {
     // only parse once
     if (this.segments) {
       return this.segments;
@@ -34,7 +36,7 @@ export class Parser {
       this.consume();
     }
 
-    const segments: PathSegment[] = [];
+    const segments: AbstractPathSegment[] = [];
 
     // Allow empty path as a special case to reference the root
     if (this.input.length < 1) {
@@ -77,7 +79,7 @@ export class Parser {
     return this.input[this.position + 1] !== ']';
   }
 
-  private parseSegment(): PathSegment {
+  private parseSegment(): AbstractPathSegment {
     const char = this.peek();
 
     // Array slice ([[start,end?]])
@@ -86,19 +88,19 @@ export class Parser {
       this.input[this.position + 1] === '[' &&
       this.isIndexOrSlice()
     ) {
-      return this.parseSlice();
+      return this.parseArrayIteratorSegment();
     }
 
     // Array index ([index])
     if (char === '[' && this.isIndexOrSlice()) {
-      return this.parseIndex();
+      return this.parseArrayIndexSegment();
     }
 
     // Field identifier (possibly with escapes)
-    return this.parseIdentifier();
+    return this.parseObjectIndexSegment();
   }
 
-  private parseIdentifier(): PathSegment {
+  private parseObjectIndexSegment(): AbstractPathIndexSegment {
     let text = '';
     let name = '';
     let escaping = false;
@@ -157,10 +159,10 @@ export class Parser {
       throw new ParseError('Expected identifier', this.position);
     }
 
-    return new ObjectFieldSegmentClass(text, name);
+    return new ObjectIndexSegment(text, name);
   }
 
-  private parseIndex(): PathSegment {
+  private parseArrayIndexSegment(): AbstractPathIteratorSegment {
     let text = '';
     text += this.consume();
 
@@ -181,7 +183,7 @@ export class Parser {
     return new ArrayIndexSegmentClass(text, index);
   }
 
-  private parseSlice(): PathSegment {
+  private parseArrayIteratorSegment(): AbstractPathIteratorSegment {
     let text = '';
 
     text += this.consume();
@@ -217,7 +219,7 @@ export class Parser {
     text += this.expect(']', 'slice closing bracket');
     text += this.expect(']', 'array slice closing bracket');
 
-    return new ArraySegmentClass(text, start, end);
+    return new ArrayIteratorSegment(text, start, end);
   }
 
   private parseInteger(): number {

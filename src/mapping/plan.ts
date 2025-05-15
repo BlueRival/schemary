@@ -1,5 +1,5 @@
 import { clone } from '../schema.js';
-import { PathSegment } from './parser/ast/pathSegment.class.js';
+import { AbstractPathIndexSegment } from './parser/ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../types.js';
 import { Parser } from './parser/core.js';
 
@@ -162,8 +162,8 @@ export class MappingRule<
   LeftTransformType extends JSONType,
   RightTransformType extends JSONType,
 > {
-  public readonly leftPath?: PathSegment[];
-  public readonly rightPath?: PathSegment[];
+  public readonly leftPath?: AbstractPathIndexSegment[];
+  public readonly rightPath?: AbstractPathIndexSegment[];
   public readonly leftTransform?: (
     value: RightTransformType,
   ) => LeftTransformType;
