@@ -2,8 +2,11 @@ import { AbstractPathIndexSegment } from './ast/abstractPathIndexSegment.class.j
 import { ArrayIndexSegmentClass } from './ast/arrayIndexSegment.class.js';
 import { ArrayIteratorSegment } from './ast/arrayIteratorSegment.class.js';
 import { ObjectIndexSegment } from './ast/objectIndexSegment.class.js';
-import { AbstractPathSegment } from './ast/abstractPathSegment.class.js';
 import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
+
+export type PathSegment =
+  | AbstractPathIndexSegment
+  | AbstractPathIteratorSegment;
 
 export class ParseError extends Error {
   constructor(
@@ -16,14 +19,14 @@ export class ParseError extends Error {
 
 export class Parser {
   private position = 0;
-  private segments: AbstractPathSegment[] | null = null;
+  private segments: PathSegment[] | null = null;
 
   constructor(private readonly input: string) {}
 
   /**
    * Parse a path expression into a list of path segments
    */
-  parsePath(): AbstractPathSegment[] {
+  parsePath(): PathSegment[] {
     // only parse once
     if (this.segments) {
       return this.segments;
@@ -36,7 +39,7 @@ export class Parser {
       this.consume();
     }
 
-    const segments: AbstractPathSegment[] = [];
+    const segments: PathSegment[] = [];
 
     // Allow empty path as a special case to reference the root
     if (this.input.length < 1) {
@@ -79,7 +82,7 @@ export class Parser {
     return this.input[this.position + 1] !== ']';
   }
 
-  private parseSegment(): AbstractPathSegment {
+  private parseSegment(): PathSegment {
     const char = this.peek();
 
     // Array slice ([[start,end?]])

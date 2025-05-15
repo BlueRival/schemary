@@ -1,11 +1,11 @@
 import { AbstractPathIndexSegment } from './ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../../types.js';
 import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
-import { AbstractPathSegment } from './ast/abstractPathSegment.class.js';
+import { clone } from '../../schema.js';
 
 export function extractValue(
   source: JSONType,
-  path: AbstractPathSegment[],
+  path: (AbstractPathIndexSegment | AbstractPathIteratorSegment)[],
 ): JSONType | undefined {
   let currentValue = source; // seed the loop
   let remainingPath = [...path];
@@ -26,7 +26,9 @@ export function extractValue(
    */
   while (remainingPath.length > 0) {
     // we know shift will return an entry because we are in a while(path.length > 0) loop
-    const currentSegment = remainingPath.shift() as AbstractPathSegment;
+    const currentSegment = remainingPath.shift() as
+      | AbstractPathIndexSegment
+      | AbstractPathIteratorSegment;
 
     // Iterators take an array as a hole, because they iterator through it,
     // returning either a slice or single item from the array.
@@ -67,27 +69,103 @@ export function extractValue(
       continue;
     }
 
-    if (currentSegment instanceof AbstractPathIndexSegment) {
+    if ('getValue' in currentSegment) {
       currentValue = currentSegment.getValue(currentValue);
       continue;
     }
 
-    throw new Error(
-      `Unknown path segment type: ${currentSegment.constructor.name}`,
-    );
+    throw new Error(`Unknown path segment type: ${String(currentSegment)}}`);
   }
 
   return currentValue;
 }
 
 export function injectValue(
-  destination: JSONType,
+  destination: JSONType | undefined,
   value: JSONType | undefined,
-  path: AbstractPathIndexSegment[],
+  path: (AbstractPathIndexSegment | AbstractPathIteratorSegment)[],
 ): JSONType | undefined {
   if (path.length === 0) {
     return value;
   }
-  const [firstSegment, ...remainingPath] = path;
-  // TODO: write this
+
+  let currentDestination = clone(destination);
+  let remainingPath = [...path];
+  let currentSegment = path[0];
+
+  while (remainingPath.length > 0) {
+    // we know shift will return an entry because we are in a while(path.length > 0) loop
+    currentSegment = remainingPath.shift() as
+      | AbstractPathIndexSegment
+      | AbstractPathIteratorSegment;
+
+    if (currentSegment instanceof AbstractPathIteratorSegment) {
+      // we ignore any source that comes in as not an array if the current segment is an iterator
+      if (!Array.isArray(currentDestination)) {
+        currentDestination = [];
+      }
+
+      const { result: nextDestination, iterate } =
+        currentSegment.getValue(currentDestination);
+
+      if (iterate) {
+        currentDestination = nextDestination.map((item) =>
+          injectValue(item, value, remainingPath),
+        );
+        remainingPath = [];
+      } else {
+        currentDestination = nextDestination;
+      }
+
+      continue;
+    }
+
+    currentDestination = currentSegment.getValue(currentDestination);
+  }
+
+  if (currentSegment instanceof AbstractPathIteratorSegment) {
+    // we ignore any source that comes in as not an array if the current segment is an iterator
+    if (!Array.isArray(currentDestination)) {
+      currentDestination = [currentDestination];
+    }
+
+    currentDestination = currentSegment.setValue(currentDestination, value);
+  } else {
+    currentDestination = currentSegment.setValue(currentDestination, value);
+  }
+
+  return currentDestination;
 }
+
+// public static setValue(
+//   destination: JSONType,
+//   value: JSONType | undefined,
+//   path: PathSegment[],
+// ): JSONType | undefined {
+//   if (path.length === 0) {
+//     return value;
+//   }
+//   const [firstSegment, ...remainingPath] = path;
+//
+//   return firstSegment.setValue(destination, value, remainingPath);
+// }
+//
+// private getNextValue(
+//   destination: JSONType | undefined,
+//   value: JSONType | undefined,
+//   remainingPath: PathSegment[],
+//   traversedPath: PathSegment[] = [],
+// ): JSONType {
+//   // We are not the last segment, so pass the value/destination up to the next segment
+//   const [nextSegment, ...nextRemainingPath] = remainingPath;
+//
+//   // if this is the first traversal of the path, destination will be undefined
+//   const nextDestination = this._getValue(destination);
+//
+//   return nextSegment.setValue(
+//     nextDestination,
+//     value,
+//     nextRemainingPath,
+//     traversedPath,
+//   );
+// }

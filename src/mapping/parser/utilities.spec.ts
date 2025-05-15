@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Parser } from './core.js';
+import { Parser, PathSegment } from './core.js';
 import { extractValue } from './utilities.js';
-import { AbstractPathSegment } from './ast/abstractPathSegment.class.js';
 
 const SOURCE_DATA = {
   users: [
@@ -359,8 +358,8 @@ describe('Complex path getValue tests', () => {
     expect(() => {
       extractValue(SOURCE_DATA, [
         // passing in any class that isn't AbstractPathSegment
-        new Parser('any object really') as unknown as AbstractPathSegment,
+        new Error('not a path segment') as unknown as PathSegment,
       ]);
-    }).toThrow('Unknown path segment type: Parser');
+    }).toThrow('Unknown path segment type: Error: not a path segment');
   });
 });
