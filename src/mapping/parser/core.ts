@@ -3,10 +3,7 @@ import { ArrayIndexSegmentClass } from './ast/arrayIndexSegment.class.js';
 import { ArrayIteratorSegment } from './ast/arrayIteratorSegment.class.js';
 import { ObjectIndexSegment } from './ast/objectIndexSegment.class.js';
 import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
-
-export type PathSegment =
-  | AbstractPathIndexSegment
-  | AbstractPathIteratorSegment;
+import { PathSegment } from './ast/types.js';
 
 export class ParseError extends Error {
   constructor(

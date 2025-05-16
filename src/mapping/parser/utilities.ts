@@ -1,11 +1,11 @@
-import { AbstractPathIndexSegment } from './ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../../types.js';
-import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
 import { clone } from '../../schema.js';
+import { AbstractPathIteratorSegment } from './ast/abstractPathIteratorSegment.class.js';
+import { PathSegment } from './ast/types.js';
 
 export function extractValue(
   source: JSONType,
-  path: (AbstractPathIndexSegment | AbstractPathIteratorSegment)[],
+  path: PathSegment[],
 ): JSONType | undefined {
   let currentValue = source; // seed the loop
   let remainingPath = [...path];
@@ -26,9 +26,7 @@ export function extractValue(
    */
   while (remainingPath.length > 0) {
     // we know shift will return an entry because we are in a while(path.length > 0) loop
-    const currentSegment = remainingPath.shift() as
-      | AbstractPathIndexSegment
-      | AbstractPathIteratorSegment;
+    const currentSegment = remainingPath.shift() as PathSegment;
 
     // Iterators take an array as a hole, because they iterator through it,
     // returning either a slice or single item from the array.
@@ -40,10 +38,10 @@ export function extractValue(
       }
 
       // let the iterator get iteration
-      const { result, iterate } = currentSegment.getValue(currentValue);
+      const { result, chain } = currentSegment.getValue(currentValue);
 
       // if the iterator wants the iteration to recurse, iterate will be true
-      if (iterate) {
+      if (chain) {
         currentValue = result.map((item) => extractValue(item, remainingPath));
 
         // loop, we will parse the rest of it recursively.
@@ -83,89 +81,52 @@ export function extractValue(
 export function injectValue(
   destination: JSONType | undefined,
   value: JSONType | undefined,
-  path: (AbstractPathIndexSegment | AbstractPathIteratorSegment)[],
+  path: PathSegment[],
 ): JSONType | undefined {
   if (path.length === 0) {
     return value;
   }
 
-  let currentDestination = clone(destination);
-  let remainingPath = [...path];
-  let currentSegment = path[0];
-
-  while (remainingPath.length > 0) {
-    // we know shift will return an entry because we are in a while(path.length > 0) loop
-    currentSegment = remainingPath.shift() as
-      | AbstractPathIndexSegment
-      | AbstractPathIteratorSegment;
-
-    if (currentSegment instanceof AbstractPathIteratorSegment) {
-      // we ignore any source that comes in as not an array if the current segment is an iterator
-      if (!Array.isArray(currentDestination)) {
-        currentDestination = [];
+  if (path.length === 1) {
+    if (path[0] instanceof AbstractPathIteratorSegment) {
+      if (!Array.isArray(destination)) {
+        destination = [];
       }
-
-      const { result: nextDestination, iterate } =
-        currentSegment.getValue(currentDestination);
-
-      if (iterate) {
-        currentDestination = nextDestination.map((item) =>
-          injectValue(item, value, remainingPath),
-        );
-        remainingPath = [];
-      } else {
-        currentDestination = nextDestination;
-      }
-
-      continue;
+      return path[0].setValue(destination, value);
     }
 
-    currentDestination = currentSegment.getValue(currentDestination);
+    return path[0].setValue(destination, value);
   }
+
+  let currentDestination = clone(destination);
+
+  const [currentSegment, ...remainingPath] = path;
 
   if (currentSegment instanceof AbstractPathIteratorSegment) {
     // we ignore any source that comes in as not an array if the current segment is an iterator
     if (!Array.isArray(currentDestination)) {
-      currentDestination = [currentDestination];
+      currentDestination = [];
     }
 
-    currentDestination = currentSegment.setValue(currentDestination, value);
+    const { result, chain } = currentSegment.getValue(currentDestination);
+
+    if (chain) {
+      console.log('chain iteration');
+      currentDestination = result.map((item) =>
+        injectValue(item, value, remainingPath),
+      );
+    } else {
+      console.log('no chain iteration');
+      currentDestination = injectValue(result, value, remainingPath);
+    }
   } else {
-    currentDestination = currentSegment.setValue(currentDestination, value);
+    // if the current
+    const nextDestination = currentSegment.getValue(currentDestination);
+
+    const nextValue = injectValue(nextDestination, value, remainingPath);
+
+    currentDestination = currentSegment.setValue(currentDestination, nextValue);
   }
 
   return currentDestination;
 }
-
-// public static setValue(
-//   destination: JSONType,
-//   value: JSONType | undefined,
-//   path: PathSegment[],
-// ): JSONType | undefined {
-//   if (path.length === 0) {
-//     return value;
-//   }
-//   const [firstSegment, ...remainingPath] = path;
-//
-//   return firstSegment.setValue(destination, value, remainingPath);
-// }
-//
-// private getNextValue(
-//   destination: JSONType | undefined,
-//   value: JSONType | undefined,
-//   remainingPath: PathSegment[],
-//   traversedPath: PathSegment[] = [],
-// ): JSONType {
-//   // We are not the last segment, so pass the value/destination up to the next segment
-//   const [nextSegment, ...nextRemainingPath] = remainingPath;
-//
-//   // if this is the first traversal of the path, destination will be undefined
-//   const nextDestination = this._getValue(destination);
-//
-//   return nextSegment.setValue(
-//     nextDestination,
-//     value,
-//     nextRemainingPath,
-//     traversedPath,
-//   );
-// }

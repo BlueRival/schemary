@@ -1,7 +1,7 @@
 import { JSONType, JSONArray } from '../../../types.js';
 import {
   AbstractPathIteratorSegment,
-  NoIterateResult,
+  NoChainResult,
 } from './abstractPathIteratorSegment.class.js';
 
 // Array index segment (e.g., [0], [-1])
@@ -17,10 +17,10 @@ export class ArrayIndexSegmentClass extends AbstractPathIteratorSegment {
     return this.index < 0 ? arr.length + this.index : this.index;
   }
 
-  public getValue(source: JSONArray): NoIterateResult {
+  public getValue(source: JSONArray): NoChainResult {
     // only works on truthy objects (including arrays)
     if (!Array.isArray(source)) {
-      return { result: undefined, iterate: false };
+      return { result: undefined, chain: false };
     }
 
     const index = this._realIndex(source);
@@ -30,7 +30,7 @@ export class ArrayIndexSegmentClass extends AbstractPathIteratorSegment {
     }
 
     // we can pull fields out of objects, but also arrays, like the length field
-    return { result: source[index], iterate: false };
+    return { result: source[index], chain: false };
   }
 
   public setValue(

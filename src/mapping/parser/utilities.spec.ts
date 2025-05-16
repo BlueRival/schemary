@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Parser, PathSegment } from './core.js';
-import { extractValue } from './utilities.js';
+import { Parser } from './core.js';
+import { extractValue, injectValue } from './utilities.js';
+import { PathSegment } from './ast/types.js';
 
 const SOURCE_DATA = {
   users: [
@@ -121,7 +122,7 @@ const SOURCE_DATA = {
   ],
 };
 
-describe('Complex path getValue tests', () => {
+describe('extractValue()', () => {
   it('should correctly extract fields across array slice', () => {
     // Test the complex nested path with array slices
     const parser = new Parser('users[[1,3]].name');
@@ -361,5 +362,46 @@ describe('Complex path getValue tests', () => {
         new Error('not a path segment') as unknown as PathSegment,
       ]);
     }).toThrow('Unknown path segment type: Error: not a path segment');
+  });
+});
+
+describe('injectValue()', () => {
+  it('should passthrough on empty path', () => {
+    // Test the complex nested path with array slices
+    const parser = new Parser('users');
+
+    const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], []);
+
+    expect(result).toStrictEqual(['Jane', 'Bob', 'Alice']);
+  });
+
+  it('should create a new users array with just field names in it', () => {
+    // Test the complex nested path with array slices
+    const parser = new Parser('users');
+    const path = parser.parsePath();
+
+    const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], path);
+
+    expect(result).toStrictEqual({ users: ['Jane', 'Bob', 'Alice'] });
+  });
+
+  it('should create a new users array with just field names in it, reversed', () => {
+    // Test the complex nested path with array slices
+    const parser = new Parser('users[[0,-3]]');
+    const path = parser.parsePath();
+
+    const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], path);
+
+    expect(result).toStrictEqual({ users: ['Alice', 'Bob', 'Jane'] });
+  });
+
+  it("should override if target doesn't match type", () => {
+    // Test the complex nested path with array slices
+    const parser = new Parser('users[[0]]');
+    const path = parser.parsePath();
+
+    const result = injectValue({ users: {} }, ['Jane', 'Bob', 'Alice'], path);
+
+    expect(result).toStrictEqual({ users: ['Jane', 'Alice', 'Bob'] });
   });
 });

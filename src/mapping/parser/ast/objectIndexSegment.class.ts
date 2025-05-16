@@ -41,9 +41,14 @@ export class ObjectIndexSegment extends AbstractPathIndexSegment {
   public getValue(source: JSONType): JSONType {
     const output = this.getValues(source);
 
+    console.log('getValue raw output', output);
+
     if (this.multiMatch) {
+      console.log('multiMatch');
       return output;
     }
+
+    console.log('getValue return', this.name, 'from', output);
 
     // return the actual item
     return output[this.name];

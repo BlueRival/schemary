@@ -2,7 +2,7 @@ import { JSONType, JSONArray } from '../../../types.js';
 import { clone } from '../../../schema.js';
 import {
   AbstractPathIteratorSegment,
-  IterateResult,
+  ChainResult,
 } from './abstractPathIteratorSegment.class.js';
 
 export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
@@ -64,7 +64,7 @@ export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
     source.map((item) => handler(item));
   }
 
-  public getValue(source: JSONArray): IterateResult {
+  public getValue(source: JSONArray): ChainResult {
     const result: JSONArray = [];
 
     // runtime-check
@@ -74,7 +74,7 @@ export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
 
     this._getIterate(source, (item) => result.push(clone(item)));
 
-    return { result, iterate: true };
+    return { result, chain: true };
   }
 
   public setValue(

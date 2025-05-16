@@ -1,20 +1,25 @@
 import { AbstractPathSegment } from './abstractPathSegment.class.js';
 import { JSONArray, JSONType } from '../../../types.js';
 
-export interface IterateResult {
-  result: JSONArray;
-  iterate: true;
-}
-
-export interface NoIterateResult {
+interface IterationChainResult {
   result: JSONType;
-  iterate: false;
+  chain: boolean;
 }
 
-export type GetResult = IterateResult | NoIterateResult;
+export interface ChainResult extends IterationChainResult {
+  result: JSONArray;
+  chain: true;
+}
+
+export interface NoChainResult extends IterationChainResult {
+  result: JSONType;
+  chain: false;
+}
+
+export type IterationResult = ChainResult | NoChainResult;
 
 export abstract class AbstractPathIteratorSegment extends AbstractPathSegment {
-  public abstract getValue(previousValue: JSONArray): GetResult;
+  public abstract getValue(previousValue: JSONArray): IterationResult;
 
   public abstract setValue(
     destination: JSONArray | undefined,
