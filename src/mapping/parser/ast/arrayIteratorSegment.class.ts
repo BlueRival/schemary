@@ -72,7 +72,7 @@ export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
       source = [];
     }
 
-    this._getIterate(source, (item) => result.push(clone(item)));
+    this._getIterate(source, (item) => result.push(item ? clone(item) : item));
 
     return { result, chain: true };
   }
@@ -85,7 +85,7 @@ export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
       destination = [];
     }
     if (!Array.isArray(value)) {
-      value = [value];
+      value = value === undefined ? [] : [value];
     }
 
     let start = this.start;

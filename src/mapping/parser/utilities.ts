@@ -98,7 +98,7 @@ export function injectValue(
     return path[0].setValue(destination, value);
   }
 
-  let currentDestination = clone(destination);
+  let currentDestination = destination;
 
   const [currentSegment, ...remainingPath] = path;
 
@@ -111,13 +111,27 @@ export function injectValue(
     const { result, chain } = currentSegment.getValue(currentDestination);
 
     if (chain) {
-      console.log('chain iteration');
-      currentDestination = result.map((item) =>
-        injectValue(item, value, remainingPath),
+      const arrValue = Array.isArray(value) ? value : [value];
+
+      const nextValue = result.map((item, index) =>
+        injectValue(
+          item,
+          index < arrValue.length ? arrValue[index] : undefined,
+          remainingPath,
+        ),
+      );
+
+      currentDestination = currentSegment.setValue(
+        currentDestination,
+        nextValue,
       );
     } else {
-      console.log('no chain iteration');
-      currentDestination = injectValue(result, value, remainingPath);
+      const nextValue = injectValue(result, value, remainingPath);
+
+      currentDestination = currentSegment.setValue(
+        currentDestination,
+        nextValue,
+      );
     }
   } else {
     // if the current

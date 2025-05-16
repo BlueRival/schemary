@@ -37,6 +37,7 @@ export type JSONType =
 // We define this twice because of issues with the compiler. See notes on JSONType.
 export const JSONSchema: z.ZodType<JSONType> = z.lazy(() =>
   z.union([
+    z.undefined(),
     z.string(),
     z.number(),
     z.boolean(),

@@ -6,9 +6,13 @@ import {
 import { AbstractPathIndexSegment } from './parser/ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../types.js';
 import { format as TimestampFormatter } from '../formatters/timestamp.js';
+import { extractValue, injectValue } from './parser/utilities.js';
 
-function getValue(source: JSONType, path: AbstractPathIndexSegment[]): JSONType | undefined {
-  return AbstractPathIndexSegment.getValue(source, path);
+function getValue(
+  source: JSONType,
+  path: AbstractPathIndexSegment[],
+): JSONType | undefined {
+  return extractValue(source, path);
 }
 
 function setValue(
@@ -16,7 +20,7 @@ function setValue(
   value: JSONType | undefined,
   path: AbstractPathIndexSegment[],
 ): JSONType | undefined {
-  return AbstractPathIndexSegment.setValue(destination, value, path);
+  return injectValue(destination, value, path);
 }
 
 export enum MAP_DIRECTION {
@@ -53,8 +57,6 @@ export function map(
 
   // Apply each mapping rule
   for (const rule of rules) {
-    console.log('rule', rule);
-
     const targetPath =
       direction === MAP_DIRECTION.LeftToRight ? rule.rightPath : rule.leftPath;
 
@@ -125,14 +127,8 @@ export function map(
       }
     }
 
-    console.log('result', result);
-    console.log('valueToSet', valueToSet);
-    console.log('targetPath', targetPath.map((p) => p.sourceText).join('.'));
-
     // finally, send the value to set to the target path on the current result.
     result = setValue(result, valueToSet, targetPath);
-
-    console.log('\n\n\n\n');
   }
 
   return result;

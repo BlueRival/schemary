@@ -367,9 +367,6 @@ describe('extractValue()', () => {
 
 describe('injectValue()', () => {
   it('should passthrough on empty path', () => {
-    // Test the complex nested path with array slices
-    const parser = new Parser('users');
-
     const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], []);
 
     expect(result).toStrictEqual(['Jane', 'Bob', 'Alice']);
@@ -402,6 +399,731 @@ describe('injectValue()', () => {
 
     const result = injectValue({ users: {} }, ['Jane', 'Bob', 'Alice'], path);
 
-    expect(result).toStrictEqual({ users: ['Jane', 'Alice', 'Bob'] });
+    expect(result).toStrictEqual({ users: ['Jane', 'Bob', 'Alice'] });
+  });
+
+  it('should handle root array', () => {
+    // Test the complex nested path with array slices
+    const parser = new Parser('[[0]]');
+    const path = parser.parsePath();
+
+    const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], path);
+
+    expect(result).toStrictEqual(['Jane', 'Bob', 'Alice']);
+  });
+
+  it('should inject value into a deeply nested object path', () => {
+    const parser = new Parser('company.departments.engineering.employees');
+    const path = parser.parsePath();
+
+    const result = injectValue(undefined, ['John', 'Jane', 'Bob'], path);
+
+    expect(result).toStrictEqual({
+      company: {
+        departments: {
+          engineering: {
+            employees: ['John', 'Jane', 'Bob'],
+          },
+        },
+      },
+    });
+  });
+
+  it('should merge with existing object structure', () => {
+    const parser = new Parser('company.departments.engineering.employees');
+    const path = parser.parsePath();
+
+    const existingData = {
+      company: {
+        departments: {
+          engineering: {
+            budget: 1000000,
+            location: 'Building A',
+          },
+          marketing: {
+            employees: ['Alice', 'Charlie'],
+          },
+        },
+        founded: 2010,
+      },
+    };
+
+    const result = injectValue(existingData, ['John', 'Jane', 'Bob'], path);
+
+    expect(result).toStrictEqual({
+      company: {
+        departments: {
+          engineering: {
+            budget: 1000000,
+            location: 'Building A',
+            employees: ['John', 'Jane', 'Bob'],
+          },
+          marketing: {
+            employees: ['Alice', 'Charlie'],
+          },
+        },
+        founded: 2010,
+      },
+    });
+  });
+
+  it('should inject complex object into an array at a specific index', () => {
+    const parser = new Parser('users[2].profile');
+    const path = parser.parsePath();
+
+    const complexValue = {
+      firstName: 'Bob',
+      lastName: 'Smith',
+    };
+
+    const existingData = {
+      users: [
+        { id: 1, name: 'John' },
+        { id: 2, name: 'Jane' },
+        { id: 3, name: 'Bob' },
+        { id: 4, name: 'Alice' },
+      ],
+    };
+
+    const result = injectValue(existingData, complexValue, path);
+
+    expect(result).toStrictEqual({
+      users: [
+        { id: 1, name: 'John' },
+        { id: 2, name: 'Jane' },
+        {
+          id: 3,
+          name: 'Bob',
+          profile: {
+            firstName: 'Bob',
+            lastName: 'Smith',
+          },
+        },
+        { id: 4, name: 'Alice' },
+      ],
+    });
+  });
+
+  it('should handle complex array slices with multi-level nesting', () => {
+    const parser = new Parser(
+      'company.departments[[0,2]].projects[[1,1]].tasks',
+    );
+    const path = parser.parsePath();
+
+    const complexValue = [
+      ['Code Review', 'Testing', 'Documentation'],
+      ['Project Review', 'Integration Testing', 'Tech Documentation'],
+    ];
+
+    const existingData = {
+      company: {
+        departments: [
+          {
+            name: 'Engineering',
+            projects: [
+              { id: 'P1', name: 'Project Alpha' },
+              {
+                id: 'P2',
+                name: 'Project Beta',
+              },
+              { id: 'P3', name: 'Project Gamma' },
+            ],
+          },
+          {
+            name: 'Design',
+            projects: [
+              { id: 'P4', name: 'Project Delta' },
+              {
+                id: 'P5',
+                name: 'Project Epsilon',
+              },
+            ],
+          },
+          {
+            name: 'Marketing',
+            projects: [
+              { id: 'P6', name: 'Project Zeta' },
+              { id: 'P7', name: 'Project Eta' },
+              { id: 'P8', name: 'Project Theta' },
+            ],
+          },
+        ],
+      },
+    };
+
+    const result = injectValue(existingData, complexValue, path);
+
+    expect(result).toStrictEqual({
+      company: {
+        departments: [
+          {
+            name: 'Engineering',
+            projects: [
+              { id: 'P1', name: 'Project Alpha' },
+              {
+                id: 'P2',
+                name: 'Project Beta',
+                tasks: complexValue[0][0],
+              },
+              { id: 'P3', name: 'Project Gamma' },
+            ],
+          },
+          {
+            name: 'Design',
+            projects: [
+              { id: 'P4', name: 'Project Delta' },
+              {
+                id: 'P5',
+                name: 'Project Epsilon',
+                tasks: complexValue[1][0],
+              },
+            ],
+          },
+          {
+            name: 'Marketing',
+            projects: [
+              { id: 'P6', name: 'Project Zeta' },
+              { id: 'P7', name: 'Project Eta' },
+              { id: 'P8', name: 'Project Theta' },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it('should inject into arrays that need to be created', () => {
+    const parser = new Parser(
+      'data.regions[2].cities[0].neighborhoods[1].streets',
+    );
+    const path = parser.parsePath();
+
+    const streetNames = ['Maple St', 'Oak Ave', 'Pine Blvd'];
+
+    const result = injectValue(undefined, streetNames, path);
+
+    // This creates a deep structure with arrays that need placeholder undefined values
+    expect(JSON.stringify(result, null, 2)).toStrictEqual(
+      JSON.stringify(
+        {
+          data: {
+            regions: [
+              undefined,
+              undefined,
+              {
+                cities: [
+                  {
+                    neighborhoods: [
+                      undefined,
+                      {
+                        streets: streetNames,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2,
+      ),
+    );
+  });
+
+  it('should handle complex transformations with mixed array and object paths', () => {
+    const parser = new Parser(
+      'statistics.years[[1,3]].quarters[2].metrics.visitors',
+    );
+    const path = parser.parsePath();
+
+    const visitorData = [1500, 1750, 2000];
+
+    const existingData = {
+      statistics: {
+        years: [
+          { year: 2020, quarters: [{}, {}, { revenue: 500000 }, {}] },
+          { year: 2021, quarters: [{}, {}, { revenue: 550000 }, {}] },
+          { year: 2022, quarters: [{}, {}, { revenue: 600000 }, {}] },
+          { year: 2023, quarters: [{}, {}, { revenue: 650000 }, {}] },
+          { year: 2024, quarters: [{}, {}, { revenue: 700000 }, {}] },
+        ],
+        summary: 'Annual growth',
+      },
+    };
+
+    const result = injectValue(existingData, visitorData, path);
+
+    expect(result).toStrictEqual({
+      statistics: {
+        years: [
+          { year: 2020, quarters: [{}, {}, { revenue: 500000 }, {}] },
+          {
+            year: 2021,
+            quarters: [
+              {},
+              {},
+              { revenue: 550000, metrics: { visitors: visitorData[0] } },
+              {},
+            ],
+          },
+          {
+            year: 2022,
+            quarters: [
+              {},
+              {},
+              { revenue: 600000, metrics: { visitors: visitorData[1] } },
+              {},
+            ],
+          },
+          {
+            year: 2023,
+            quarters: [
+              {},
+              {},
+              { revenue: 650000, metrics: { visitors: visitorData[2] } },
+              {},
+            ],
+          },
+          { year: 2024, quarters: [{}, {}, { revenue: 700000 }, {}] },
+        ],
+        summary: 'Annual growth',
+      },
+    });
+  });
+
+  it('should handle extremely deep and complex nested paths', () => {
+    const cityData = [
+      { name: 'Metropolis', population: 1000000 },
+      { name: 'Gotham', population: 800000 },
+      { name: 'Atlantis', population: 500000 },
+    ];
+
+    const existingData = {
+      universe: {
+        galaxies: [
+          { name: 'Milky Way' },
+          {
+            name: 'Andromeda',
+            solarSystems: [
+              {
+                planets: [
+                  { name: 'Alpha' },
+                  { name: 'Beta' },
+                  {
+                    name: 'Gamma',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Xanadu' },
+                          { name: 'Eldorado' },
+                          { name: 'Shangri-La' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Delta',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Avalon' },
+                          { name: 'Asgard' },
+                          { name: 'Olympus' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Epsilon',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Camelot' },
+                          { name: 'Valhalla' },
+                          { name: 'Elysium' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'Triangulum',
+            solarSystems: [
+              {
+                planets: [
+                  { name: 'One' },
+                  { name: 'Two' },
+                  {
+                    name: 'Three',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Eden' },
+                          { name: 'Arcadia' },
+                          { name: 'Utopia' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Four',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Hyperborea' },
+                          { name: 'Lemuria' },
+                          { name: 'Atlantis' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Five',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Lyonesse' },
+                          { name: 'Ys' },
+                          { name: 'Kitezh' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parser = new Parser(
+      'universe.galaxies[[1,2]].solarSystems[0].planets[[2,4]].continents[0].countries[[0,1]].cities',
+    );
+    const path = parser.parsePath();
+
+    const result = injectValue(existingData, cityData, path);
+
+    // The expected result is extremely complex with cities injected at specific nested locations
+    expect(result).toStrictEqual({
+      universe: {
+        galaxies: [
+          { name: 'Milky Way' },
+          {
+            name: 'Andromeda',
+            solarSystems: [
+              {
+                planets: [
+                  { name: 'Alpha' },
+                  { name: 'Beta' },
+                  {
+                    name: 'Gamma',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Xanadu', cities: cityData[0] },
+                          { name: 'Eldorado' },
+                          { name: 'Shangri-La' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Delta',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Avalon' },
+                          { name: 'Asgard' },
+                          { name: 'Olympus' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Epsilon',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Camelot' },
+                          { name: 'Valhalla' },
+                          { name: 'Elysium' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'Triangulum',
+            solarSystems: [
+              {
+                planets: [
+                  { name: 'One' },
+                  { name: 'Two' },
+                  {
+                    name: 'Three',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Eden', cities: cityData[1] },
+                          { name: 'Arcadia' },
+                          { name: 'Utopia' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Four',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Hyperborea' },
+                          { name: 'Lemuria' },
+                          { name: 'Atlantis' },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: 'Five',
+                    continents: [
+                      {
+                        countries: [
+                          { name: 'Lyonesse' },
+                          { name: 'Ys' },
+                          { name: 'Kitezh' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it('should handle injecting into existing array indices with complex objects', () => {
+    const parser = new Parser('employees[0].tasks[1].subtasks[2].assignees');
+    const path = parser.parsePath();
+
+    const assigneeData = [
+      { id: 101, name: 'John Doe', role: 'Developer' },
+      { id: 102, name: 'Jane Smith', role: 'Designer' },
+    ];
+
+    const existingData = {
+      employees: [
+        {
+          id: 1,
+          name: 'Alice Johnson',
+          tasks: [
+            { id: 'T1', name: 'Design homepage' },
+            {
+              id: 'T2',
+              name: 'Implement API',
+              subtasks: [
+                { id: 'ST1', name: 'Define endpoints' },
+                { id: 'ST2', name: 'Create models' },
+                {
+                  id: 'ST3',
+                  name: 'Write controllers',
+                  priority: 'High',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 2,
+          name: 'Bob Williams',
+        },
+      ],
+    };
+
+    const result = injectValue(existingData, assigneeData, path);
+
+    expect(result).toStrictEqual({
+      employees: [
+        {
+          id: 1,
+          name: 'Alice Johnson',
+          tasks: [
+            { id: 'T1', name: 'Design homepage' },
+            {
+              id: 'T2',
+              name: 'Implement API',
+              subtasks: [
+                { id: 'ST1', name: 'Define endpoints' },
+                { id: 'ST2', name: 'Create models' },
+                {
+                  id: 'ST3',
+                  name: 'Write controllers',
+                  priority: 'High',
+                  assignees: assigneeData,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 2,
+          name: 'Bob Williams',
+        },
+      ],
+    });
+  });
+
+  it('should handle mixed array index and slice injections in the same path', () => {
+    const existingData = {
+      company: {
+        name: 'Acme Corp',
+        offices: [
+          {
+            location: 'New York',
+            departments: [
+              { name: 'HR' },
+              {
+                name: 'Engineering',
+                employees: [
+                  { id: 101, name: 'John' },
+                  { id: 102, name: 'Jane' },
+                  { id: 103, name: 'Bob' },
+                  { id: 104, name: 'Alice' },
+                  { id: 105, name: 'Charlie' },
+                ],
+              },
+            ],
+          },
+          {
+            location: 'San Francisco',
+            departments: [
+              { name: 'Marketing' },
+              {
+                name: 'Product',
+                employees: [
+                  { id: 201, name: 'Dave' },
+                  { id: 202, name: 'Eve' },
+                  { id: 203, name: 'Frank' },
+                  { id: 204, name: 'Grace' },
+                  { id: 205, name: 'Henry' },
+                ],
+              },
+            ],
+          },
+          {
+            location: 'London',
+            departments: [
+              { name: 'Finance' },
+              {
+                name: 'Legal',
+                employees: [
+                  { id: 301, name: 'Ivan' },
+                  { id: 302, name: 'Julia' },
+                  { id: 303, name: 'Karl' },
+                  { id: 304, name: 'Linda' },
+                  { id: 305, name: 'Mike' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const parser = new Parser(
+      'company.offices[[0,3]].departments[1].employees[[1,3]]',
+    );
+    const path = parser.parsePath();
+
+    const employeeData = [
+      [
+        { status: 'Active', clearance: 'Level 2' },
+        { status: 'Inactive', clearance: 'Level 3' },
+        { status: 'Paused', clearance: 'Level 4' },
+      ],
+      [
+        { status: 'Active', clearance: 'Level 5' },
+        { status: 'Inactive', clearance: 'Level 6' },
+        { status: 'Paused', clearance: 'Level 7' },
+      ],
+    ];
+
+    const result = injectValue(existingData, employeeData, path);
+
+    const expected = {
+      company: {
+        name: 'Acme Corp',
+        offices: [
+          {
+            location: 'New York',
+            departments: [
+              { name: 'HR' },
+              {
+                name: 'Engineering',
+                employees: [
+                  { id: 101, name: 'John' },
+                  { status: 'Active', clearance: 'Level 2' },
+                  { status: 'Inactive', clearance: 'Level 3' },
+                  { status: 'Paused', clearance: 'Level 4' },
+                  { id: 105, name: 'Charlie' },
+                ],
+              },
+            ],
+          },
+          {
+            location: 'San Francisco',
+            departments: [
+              { name: 'Marketing' },
+              {
+                name: 'Product',
+                employees: [
+                  { id: 201, name: 'Dave' },
+                  { status: 'Active', clearance: 'Level 5' },
+                  { status: 'Inactive', clearance: 'Level 6' },
+                  { status: 'Paused', clearance: 'Level 7' },
+                  { id: 205, name: 'Henry' },
+                ],
+              },
+            ],
+          },
+          {
+            location: 'London',
+            departments: [
+              { name: 'Finance' },
+              {
+                name: 'Legal',
+                employees: [
+                  { id: 301, name: 'Ivan' },
+                  {
+                    id: 302,
+                    name: 'Julia',
+                  },
+                  {
+                    id: 303,
+                    name: 'Karl',
+                  },
+                  {
+                    id: 304,
+                    name: 'Linda',
+                  },
+                  { id: 305, name: 'Mike' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    expect(result).toStrictEqual(expected);
   });
 });

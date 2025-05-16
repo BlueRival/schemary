@@ -19,7 +19,8 @@ describe('ArraySegment', () => {
 
       // Get a slice of the source
       const result = segment.getValue(source);
-      expect(result).toEqual([20, 30]);
+      expect(result.chain).toStrictEqual(true);
+      expect(result.result).toStrictEqual([20, 30]);
 
       // Modify the result
       if (Array.isArray(result)) {
@@ -28,7 +29,7 @@ describe('ArraySegment', () => {
       }
 
       // Verify source is unchanged
-      expect(source).toEqual(originalSource);
+      expect(source).toStrictEqual(originalSource);
     });
 
     it('should ensure setValue() does not allow modification of value through result, but does modify destination', () => {
@@ -39,7 +40,7 @@ describe('ArraySegment', () => {
 
       // Set the value
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 100, 200, 40, 50]);
+      expect(result).toStrictEqual([10, 100, 200, 40, 50]);
 
       // Modify the result
       if (Array.isArray(result)) {
@@ -48,10 +49,10 @@ describe('ArraySegment', () => {
       }
 
       // destination is modified in place
-      expect(destination).toEqual([999, 100, 200, 40, 50, 888]);
+      expect(destination).toStrictEqual([999, 100, 200, 40, 50, 888]);
 
       // Verify inputs are unchanged
-      expect(value).toEqual(originalValue);
+      expect(value).toStrictEqual(originalValue);
     });
 
     it('should ensure deep nested objects are also immutable in getValue', () => {
@@ -60,7 +61,9 @@ describe('ArraySegment', () => {
       const originalSource = clone(source);
 
       const result = segment.getValue(source);
-      expect(result).toEqual([{ name: 'Alice', details: { age: 30 } }]);
+      expect(result.result).toStrictEqual([
+        { name: 'Alice', details: { age: 30 } },
+      ]);
 
       // Modify nested property in the result
       if (
@@ -78,7 +81,7 @@ describe('ArraySegment', () => {
       }
 
       // Verify source is unchanged
-      expect(source).toEqual(originalSource);
+      expect(source).toStrictEqual(originalSource);
     });
 
     it('should ensure deep nested objects are also immutable in setValue', () => {
@@ -89,7 +92,7 @@ describe('ArraySegment', () => {
       const originalValue = clone(value);
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([
+      expect(result).toStrictEqual([
         { id: 1 },
         { id: 100, details: { level: 'high' } },
         { id: 3 },
@@ -106,14 +109,14 @@ describe('ArraySegment', () => {
       }
 
       // destination should be modified in place
-      expect(destination).toEqual([
+      expect(destination).toStrictEqual([
         { id: 1 },
         { id: 999, details: { level: 'modified' } },
         { id: 3 },
       ]);
 
       // Verify inputs are unchanged
-      expect(value).toEqual(originalValue);
+      expect(value).toStrictEqual(originalValue);
     });
   });
 
@@ -148,30 +151,34 @@ describe('ArraySegment', () => {
   });
 
   describe('getValue method', () => {
-    const generateTests = (
-      testName: string,
-      source: JSONType,
-      start: number,
-      size: number | undefined,
-      expected: JSONType | undefined,
-      params?: {
-        only?: boolean;
-        skip?: boolean;
-      },
-    ) => {
+    const generateTests = (params: {
+      testName: string;
+      source: JSONType;
+      start: number;
+      size: number | undefined;
+      expected: JSONType | undefined;
+      only?: boolean;
+      skip?: boolean;
+    }) => {
+      const testName = params.testName;
+      let source = params.source;
+      const start = params.start;
+      const size = params.size;
+      let expected = params.expected;
+
       source = clone(source);
       expected = clone(expected);
 
       const testFunction = () => {
         const segment = new ArrayIteratorSegment(
-          size !== undefined ? `[[${start},${size}]]` : `[[${start}]]`,
+          size === undefined ? `[[${start}]]` : `[[${start},${size}]]`,
           start,
           size,
         );
 
         const result = segment.getValue(source as JSONArray);
 
-        expect(result).toEqual(expected);
+        expect(result.result).toStrictEqual(expected);
       };
 
       if (params?.only) {
@@ -191,124 +198,142 @@ describe('ArraySegment', () => {
     const array = [10, 20, 30, 40, 50];
 
     // Tests with start only
-    generateTests(
-      'should get all elements from start',
-      array,
-      0,
-      undefined,
-      [10, 20, 30, 40, 50],
-    );
-    generateTests(
-      'should get elements starting from index 1',
-      array,
-      1,
-      undefined,
-      [20, 30, 40, 50],
-    );
-    generateTests(
-      'should get elements starting from index 3',
-      array,
-      3,
-      undefined,
-      [40, 50],
-    );
-    generateTests(
-      'should get elements starting from last element',
-      array,
-      4,
-      undefined,
-      [50],
-    );
-    generateTests(
-      'should get elements starting from beyond array length',
-      array,
-      5,
-      undefined,
-      [],
-    );
-    generateTests(
-      'should get elements starting from negative index',
-      array,
-      -2,
-      undefined,
-      [40, 50],
-    );
+    generateTests({
+      testName: 'should get all elements from start',
+      source: array,
+      start: 0,
+      size: undefined,
+      expected: [10, 20, 30, 40, 50],
+    });
+    generateTests({
+      testName: 'should get elements starting from index 1',
+      source: array,
+      start: 1,
+      size: undefined,
+      expected: [20, 30, 40, 50],
+    });
+    generateTests({
+      testName: 'should get elements starting from index 3',
+      source: array,
+      start: 3,
+      size: undefined,
+      expected: [40, 50],
+    });
+    generateTests({
+      testName: 'should get elements starting from last element',
+      source: array,
+      start: 4,
+      size: undefined,
+      expected: [50],
+    });
+    generateTests({
+      testName: 'should get elements starting from beyond array length',
+      source: array,
+      start: 5,
+      size: undefined,
+      expected: [],
+    });
+    generateTests({
+      testName: 'should get elements starting from negative index',
+      source: array,
+      start: -2,
+      size: undefined,
+      expected: [40, 50],
+    });
 
     // Tests with start and positive size
-    generateTests('should get elements with size 0', array, 0, 0, []);
-    generateTests('should get elements with size 1', array, 0, 1, [10]);
-    generateTests('should get elements with size 3', array, 1, 3, [20, 30, 40]);
-    generateTests(
-      'should get elements with size beyond array length',
-      array,
-      2,
-      10,
-      [30, 40, 50],
-    );
+    generateTests({
+      testName: 'should get elements with size 0',
+      source: array,
+      start: 0,
+      size: 0,
+      expected: [],
+    });
+    generateTests({
+      testName: 'should get elements with size 1',
+      source: array,
+      start: 0,
+      size: 1,
+      expected: [10],
+    });
+    generateTests({
+      testName: 'should get elements with size 3',
+      source: array,
+      start: 1,
+      size: 3,
+      expected: [20, 30, 40],
+    });
+    generateTests({
+      testName: 'should get elements with size beyond array length',
+      source: array,
+      start: 2,
+      size: 10,
+      expected: [30, 40, 50],
+    });
 
     // Tests with negative size (reverse slicing)
-    generateTests(
-      'should get elements with negative size',
-      array,
-      3,
-      -2,
-      [40, 30],
-    );
-    generateTests(
-      'should get elements with negative size from beginning',
-      array,
-      2,
-      -3,
-      [30, 20, 10],
-    );
+    generateTests({
+      testName: 'should get elements with negative size',
+      source: array,
+      start: 3,
+      size: -2,
+      expected: [40, 30],
+    });
+    generateTests({
+      testName: 'should get elements with negative size from beginning',
+      source: array,
+      start: 2,
+      size: -3,
+      expected: [30, 20, 10],
+    });
 
     // Tests with non-array source
-    generateTests(
-      'should return undefined for object source',
-      {},
-      0,
-      undefined,
-      undefined,
-    );
-    generateTests(
-      'should return undefined for string source',
-      'abc' as unknown as JSONType,
-      0,
-      undefined,
-      undefined,
-    );
-    generateTests(
-      'should return undefined for null source',
-      null as unknown as JSONType,
-      0,
-      undefined,
-      undefined,
-    );
+    generateTests({
+      testName: 'should return undefined for object source',
+      source: {},
+      start: 0,
+      size: undefined,
+      expected: [],
+    });
+    generateTests({
+      testName: 'should return undefined for string source',
+      source: 'abc',
+      start: 0,
+      size: undefined,
+      expected: [],
+    });
+    generateTests({
+      testName: 'should return undefined for null source',
+      source: [],
+      start: 0,
+      size: undefined,
+      expected: [],
+    });
 
     // Test with negative start and adjusted size
-    generateTests(
-      'should adjust when negative start would be out of bounds',
-      array,
-      -10,
-      3,
-      [],
-    );
+    generateTests({
+      testName: 'should adjust when negative start would be out of bounds',
+      source: array,
+      start: -10,
+      size: 3,
+      expected: [],
+    });
 
     // Edge cases
-    generateTests(
-      'should handle start at end and negative size',
-      array,
-      4,
-      -2,
-      [50, 40],
-    );
-    generateTests(
-      'should handle large negative start with small size',
-      array,
-      -20,
-      2,
-      [],
-    );
+    generateTests({
+      testName: 'should handle start at end and negative size',
+      source: array,
+      start: 4,
+      size: -2,
+      expected: [50, 40],
+    });
+    generateTests({
+      testName: 'should handle large negative start with small size',
+      source: array,
+      start: -20,
+      size: 2,
+      expected: [],
+    });
   });
 
   describe('setValue method', () => {
@@ -318,7 +343,7 @@ describe('ArraySegment', () => {
       const value = [100, 200, 300];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 100, 200, 300, 50]);
+      expect(result).toStrictEqual([10, 100, 200, 300, 50]);
     });
 
     it('should set values with start and positive size', () => {
@@ -327,7 +352,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 100, 200, 40, 50]);
+      expect(result).toStrictEqual([10, 100, 200, 40, 50]);
     });
 
     it('should set values with negative size', () => {
@@ -336,7 +361,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 20, 200, 100, 50]);
+      expect(result).toStrictEqual([10, 20, 200, 100, 50]);
     });
 
     it('should handle size 0', () => {
@@ -345,7 +370,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 20, 30, 40, 50]);
+      expect(result).toStrictEqual([10, 20, 30, 40, 50]);
     });
 
     it('should create array if destination is undefined', () => {
@@ -353,7 +378,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue(undefined, value);
-      expect(result).toEqual([100, 200]);
+      expect(result).toStrictEqual([100, 200]);
     });
 
     it('should create array if destination is non-array', () => {
@@ -362,7 +387,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([100, 200]);
+      expect(result).toStrictEqual([100, 200]);
     });
 
     it('should convert non-array value to array', () => {
@@ -371,7 +396,7 @@ describe('ArraySegment', () => {
       const value = 100;
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 100, 30]);
+      expect(result).toStrictEqual([10, 100, 30]);
     });
 
     it('should handle size undefined to use value length', () => {
@@ -380,7 +405,7 @@ describe('ArraySegment', () => {
       const value = [200, 300];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 200, 300, 40, 50]);
+      expect(result).toStrictEqual([10, 200, 300, 40, 50]);
     });
 
     it('should limit value by size', () => {
@@ -389,7 +414,7 @@ describe('ArraySegment', () => {
       const value = [100, 200, 300];
 
       const result = segment.setValue(destination, value);
-      expect(result).toEqual([10, 100, 30, 40, 50]);
+      expect(result).toStrictEqual([10, 100, 30, 40, 50]);
     });
   });
 
@@ -399,7 +424,7 @@ describe('ArraySegment', () => {
       const source = [10, 20, 30, 40, 50];
 
       const result = extractValue(source, [segment]);
-      expect(result).toEqual([20, 30, 40]);
+      expect(result).toStrictEqual([20, 30, 40]);
     });
 
     it('should use static setValue with a single segment', () => {
@@ -408,7 +433,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = injectValue(destination, value, [segment]);
-      expect(result).toEqual([10, 100, 200, 40, 50]);
+      expect(result).toStrictEqual([10, 100, 200, 40, 50]);
     });
   });
 
@@ -417,14 +442,14 @@ describe('ArraySegment', () => {
       const segment = new ArrayIteratorSegment('[[1]]', 1);
 
       const result = segment.getValue([]);
-      expect(result).toEqual([]);
+      expect(result.result).toStrictEqual([]);
     });
 
     it('should handle empty array with negative start', () => {
       const segment = new ArrayIteratorSegment('[[-1]]', -1);
 
       const result = segment.getValue([]);
-      expect(result).toEqual([]);
+      expect(result.result).toStrictEqual([]);
     });
 
     it('should set properly on empty array', () => {
@@ -432,7 +457,7 @@ describe('ArraySegment', () => {
       const value = [100, 200];
 
       const result = segment.setValue([], value);
-      expect(result).toEqual([100, 200]);
+      expect(result).toStrictEqual([100, 200]);
     });
   });
 });
