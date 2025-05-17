@@ -117,8 +117,12 @@ export function map(
       }
     }
 
+    console.log('left value', JSON.stringify(valueToSet, null, 2));
+
     // finally, send the value to set to the target path on the current result.
     result = injectValue(result, valueToSet, targetPath);
+
+    console.log('right value', JSON.stringify(result, null, 2));
   }
 
   return result;

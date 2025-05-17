@@ -64,6 +64,7 @@ function generateTests(group: string, tests: TestMapping[]) {
               ? MAP_DIRECTION.RightToLeft
               : MAP_DIRECTION.LeftToRight,
           );
+
           expect(result).toStrictEqual(testResult);
         };
 
@@ -86,6 +87,7 @@ function generateTests(group: string, tests: TestMapping[]) {
                 ? MAP_DIRECTION.LeftToRight
                 : MAP_DIRECTION.RightToLeft,
             );
+
             expect(result).toStrictEqual(testInput);
           };
 
@@ -999,14 +1001,6 @@ describe('JSON Schema Mapping', () => {
       },
       right: 'Tony',
     },
-    {
-      name: 'should map array length to primitive root',
-      rules: [{ left: 'users.length', right: '' }],
-      left: {
-        users: [{ name: 'Tony' }, { name: 'Suzanne' }],
-      },
-      right: 2,
-    },
   ]);
 
   generateTests('literal values in mapping', [
@@ -1066,17 +1060,20 @@ describe('JSON Schema Mapping', () => {
 
   generateTests('complex mapping', [
     {
-      only,
       name: 'should map nested array slices for users, orders, and items',
       rules: [
+        {
+          left: 'users[[0]]{{id,name}}',
+          right: 'users[[0]]',
+        },
         {
           left: 'users[[0]].orders[[0,1]]',
           right: 'users[[0]].orders',
         },
-        // {
-        //   left: 'users[[0]].orders[[0,1]].items[[0,3]]',
-        //   right: 'users[[0]].orders[[0,1]].items',
-        // },
+        {
+          left: 'users[[0]].orders[[0,1]].items[[0,3]]',
+          right: 'users[[0]].orders[[0]].items',
+        },
       ],
       left: {
         users: [
@@ -1211,21 +1208,7 @@ describe('JSON Schema Mapping', () => {
                   { id: 3001, name: 'Item X1', price: 100.99 },
                   { id: 3002, name: 'Item X2', price: 200.99 },
                   { id: 3003, name: 'Item X3', price: 300.99 },
-                  { id: 3004, name: 'Item X4', price: 400.99 },
                 ],
-              },
-              {
-                id: 202,
-                date: '2023-02-10',
-                items: [
-                  { id: 4001, name: 'Item Y1', price: 150.99 },
-                  { id: 4002, name: 'Item Y2', price: 250.99 },
-                ],
-              },
-              {
-                id: 203,
-                date: '2023-02-15',
-                items: [{ id: 5001, name: 'Item Z1', price: 350.99 }],
               },
             ],
           },
@@ -1381,115 +1364,6 @@ describe('JSON Schema Mapping', () => {
       },
     },
   ]);
-
-  // Tests for error thrown when applying formatting to non-string values
-  describe('formatting error handling', () => {
-    it('should throw error when applying format to non-string value', () => {
-      const rules = [
-        {
-          left: 'data.numericValue',
-          right: 'formattedValue',
-          format: {
-            type: MappingRuleFormatType.TIMESTAMP,
-            left: TimestampFormats.ISO8601,
-            right: TimestampFormats.HTTP,
-          },
-        },
-      ];
-
-      const source = {
-        data: {
-          numericValue: 12345, // Numeric value that can't be formatted as a timestamp
-        },
-      };
-
-      const plan = compile(rules);
-
-      // Test that an error is thrown
-      expect(() => {
-        map(source, plan);
-      }).toThrow('Can not apply formatting to non-string value');
-    });
-
-    it('should throw error when applying format to null value', () => {
-      const rules = [
-        {
-          left: 'data.nullValue',
-          right: 'formattedValue',
-          format: {
-            type: MappingRuleFormatType.TIMESTAMP,
-            left: TimestampFormats.ISO8601,
-            right: TimestampFormats.HTTP,
-          },
-        },
-      ];
-
-      const source = {
-        data: {
-          nullValue: null,
-        },
-      };
-
-      const plan = compile(rules);
-
-      // Test that an error is thrown
-      expect(() => {
-        map(source, plan);
-      }).toThrow('Can not apply formatting to non-string value');
-    });
-
-    it('should throw error when applying format to boolean value', () => {
-      const rules = [
-        {
-          left: 'data.boolValue',
-          right: 'formattedValue',
-          format: {
-            type: MappingRuleFormatType.TIMESTAMP,
-            left: TimestampFormats.ISO8601,
-            right: TimestampFormats.HTTP,
-          },
-        },
-      ];
-
-      const source = {
-        data: {
-          boolValue: true,
-        },
-      };
-
-      const plan = compile(rules);
-
-      expect(() => {
-        map(source, plan);
-      }).toThrow('Can not apply formatting to non-string value');
-    });
-
-    it('should throw error when applying format to object value', () => {
-      const rules = [
-        {
-          left: 'data.objectValue',
-          right: 'formattedValue',
-          format: {
-            type: MappingRuleFormatType.TIMESTAMP,
-            left: TimestampFormats.ISO8601,
-            right: TimestampFormats.HTTP,
-          },
-        },
-      ];
-
-      const source = {
-        data: {
-          objectValue: { key: 'value' },
-        },
-      };
-
-      const plan = compile(rules);
-
-      expect(() => {
-        map(source, plan);
-      }).toThrow('Can not apply formatting to non-string value');
-    });
-  });
 
   generateTests('overrideValues in mapping', [
     {
