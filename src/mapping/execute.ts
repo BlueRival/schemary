@@ -3,25 +3,10 @@ import {
   MappingPlanRuleOrder,
   MappingRuleFormatType,
 } from './plan.js';
-import { AbstractPathIndexSegment } from './parser/ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../types.js';
 import { format as TimestampFormatter } from '../formatters/timestamp.js';
 import { extractValue, injectValue } from './parser/utilities.js';
-
-function getValue(
-  source: JSONType,
-  path: AbstractPathIndexSegment[],
-): JSONType | undefined {
-  return extractValue(source, path);
-}
-
-function setValue(
-  destination: JSONType,
-  value: JSONType | undefined,
-  path: AbstractPathIndexSegment[],
-): JSONType | undefined {
-  return injectValue(destination, value, path);
-}
+import { PathSegment } from './parser/ast/types.js';
 
 export enum MAP_DIRECTION {
   LeftToRight = 0,
@@ -92,8 +77,10 @@ export function map(
     // Determine the value to set
     let valueToSet: JSONType = undefined;
 
+    // Separate this from the below because it is possible for overrideValues to be defined, BUT, the specific
+    // path for this rule pulls out an undefined.
     if (overrideValues !== undefined) {
-      valueToSet = getValue(overrideValues, targetPath);
+      valueToSet = extractValue(overrideValues, targetPath);
     }
 
     // We only look for literals and real values if overrides didn't have a value to set
@@ -102,7 +89,7 @@ export function map(
       if (rule.hasLiteral) {
         valueToSet = rule.literal;
       } else if (sourcePath) {
-        valueToSet = getValue(sourceValue, sourcePath);
+        valueToSet = extractValue(sourceValue, sourcePath);
 
         if (transform) {
           // we know that whatever type is returned from transform is a JSONType
@@ -110,17 +97,20 @@ export function map(
         }
 
         if (formatType) {
-          if (typeof valueToSet !== 'string') {
-            throw new Error('Can not apply formatting to non-string value');
-          }
-
           switch (formatType) {
             case MappingRuleFormatType.TIMESTAMP:
+              if (typeof valueToSet !== 'string') {
+                throw new Error(
+                  'Can not apply timestamp formatting to non-string value',
+                );
+              }
+
               valueToSet = TimestampFormatter(
                 valueToSet,
                 formatDestination as string, // we know this is a string because of higher up logic
                 formatSource as string, // we know this is a string because of higher up logic
               );
+
               break;
           }
         }
@@ -128,7 +118,7 @@ export function map(
     }
 
     // finally, send the value to set to the target path on the current result.
-    result = setValue(result, valueToSet, targetPath);
+    result = injectValue(result, valueToSet, targetPath);
   }
 
   return result;

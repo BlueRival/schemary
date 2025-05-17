@@ -1,7 +1,7 @@
 import { clone } from '../schema.js';
-import { AbstractPathIndexSegment } from './parser/ast/abstractPathIndexSegment.class.js';
 import { JSONType } from '../types.js';
 import { Parser } from './parser/core.js';
+import { PathSegment } from './parser/ast/types.js';
 
 /**
  * Represents a mapping structure where a string key is mapped to a literal JSON
@@ -108,7 +108,6 @@ interface MappingRuleParamsLiteralNeither {
 
 export enum MappingRuleFormatType {
   TIMESTAMP = 'timestamp',
-  PHONE = 'number',
 }
 
 interface MappingRuleParamsFormat {
@@ -162,8 +161,8 @@ export class MappingRule<
   LeftTransformType extends JSONType,
   RightTransformType extends JSONType,
 > {
-  public readonly leftPath?: AbstractPathIndexSegment[];
-  public readonly rightPath?: AbstractPathIndexSegment[];
+  public readonly leftPath?: PathSegment[];
+  public readonly rightPath?: PathSegment[];
   public readonly leftTransform?: (
     value: RightTransformType,
   ) => LeftTransformType;

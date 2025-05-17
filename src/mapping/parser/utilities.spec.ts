@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Parser } from './core.js';
 import { extractValue, injectValue } from './utilities.js';
 import { PathSegment } from './ast/types.js';
+import { JSONType } from '../../types.js';
 
 const SOURCE_DATA = {
   users: [
@@ -123,6 +124,26 @@ const SOURCE_DATA = {
 };
 
 describe('extractValue()', () => {
+  it('should throw a useful exception for invalid segment type', () => {
+    const parser = new Parser('matrix[[0]][[0]][2]');
+    let path = parser.parsePath();
+
+    // inject invalid segment in middle of a path and end, only first should throw
+    path.push(new Error('not a path segment') as unknown as PathSegment);
+    path = path.concat(path);
+    path.push(
+      new Error(
+        'the first not a path segment should be the error',
+      ) as unknown as PathSegment,
+    );
+
+    expect(() => {
+      extractValue(SOURCE_DATA, path);
+    }).toThrow(
+      'Exception at matrix[[0]][[0]][2]<invalid path segment>: currentSegment.getValue is not a function',
+    );
+  });
+
   it('should correctly extract fields across array slice', () => {
     // Test the complex nested path with array slices
     const parser = new Parser('users[[1,3]].name');
@@ -354,18 +375,29 @@ describe('extractValue()', () => {
       [21, 24, 27],
     ]);
   });
-
-  it('should throw an exception for invalid segment type', () => {
-    expect(() => {
-      extractValue(SOURCE_DATA, [
-        // passing in any class that isn't AbstractPathSegment
-        new Error('not a path segment') as unknown as PathSegment,
-      ]);
-    }).toThrow('Unknown path segment type: Error: not a path segment');
-  });
 });
 
 describe('injectValue()', () => {
+  it('should throw a useful exception for invalid segment type', () => {
+    const parser = new Parser('matrix[[0]][[0]][2]');
+    let path = parser.parsePath();
+
+    // inject invalid segment in middle of a path and end, only first should throw
+    path.push(new Error('not a path segment') as unknown as PathSegment);
+    path = path.concat(path);
+    path.push(
+      new Error(
+        'the first not a path segment should be the error',
+      ) as unknown as PathSegment,
+    );
+
+    expect(() => {
+      injectValue(undefined, ['Jane', 'Bob', 'Alice'], path);
+    }).toThrow(
+      'Exception at matrix[[0]][[0]][2]<invalid path segment>: currentSegment.getValue is not a function',
+    );
+  });
+
   it('should passthrough on empty path', () => {
     const result = injectValue(undefined, ['Jane', 'Bob', 'Alice'], []);
 
@@ -1125,5 +1157,551 @@ describe('injectValue()', () => {
     };
 
     expect(result).toStrictEqual(expected);
+  });
+
+  it('should handle nested arrays when target path is not explicitly an array', () => {
+    const value = [
+      [
+        {
+          id: 101,
+          date: '2023-01-15',
+          items: [
+            {
+              id: 1001,
+              name: 'Item 1',
+              price: 10.99,
+            },
+            {
+              id: 1002,
+              name: 'Item 2',
+              price: 20.99,
+            },
+            {
+              id: 1003,
+              name: 'Item 3',
+              price: 30.99,
+            },
+            {
+              id: 1004,
+              name: 'Item 4',
+              price: 40.99,
+            },
+            {
+              id: 1005,
+              name: 'Item 5',
+              price: 50.99,
+            },
+          ],
+        },
+      ],
+      [
+        {
+          id: 201,
+          date: '2023-02-05',
+          items: [
+            {
+              id: 3001,
+              name: 'Item X1',
+              price: 100.99,
+            },
+            {
+              id: 3002,
+              name: 'Item X2',
+              price: 200.99,
+            },
+            {
+              id: 3003,
+              name: 'Item X3',
+              price: 300.99,
+            },
+            {
+              id: 3004,
+              name: 'Item X4',
+              price: 400.99,
+            },
+          ],
+        },
+      ],
+      [
+        {
+          id: 301,
+          date: '2023-03-05',
+          items: [
+            {
+              id: 6001,
+              name: 'Item P1',
+              price: 120.99,
+            },
+            {
+              id: 6002,
+              name: 'Item P2',
+              price: 220.99,
+            },
+          ],
+        },
+      ],
+      [
+        {
+          id: 401,
+          date: '2023-04-10',
+          items: [
+            {
+              id: 7001,
+              name: 'Item Q1',
+              price: 130.99,
+            },
+            {
+              id: 7002,
+              name: 'Item Q2',
+              price: 230.99,
+            },
+          ],
+        },
+      ],
+      [],
+      [],
+    ];
+
+    const parser = new Parser('users[[0]].orders');
+    const path = parser.parsePath();
+    let result: JSONType;
+
+    // eslint-disable-next-line prefer-const
+    result = injectValue(result, value, path);
+
+    expect(result).toStrictEqual({
+      users: [
+        {
+          orders: [
+            {
+              id: 101,
+              date: '2023-01-15',
+              items: [
+                {
+                  id: 1001,
+                  name: 'Item 1',
+                  price: 10.99,
+                },
+                {
+                  id: 1002,
+                  name: 'Item 2',
+                  price: 20.99,
+                },
+                {
+                  id: 1003,
+                  name: 'Item 3',
+                  price: 30.99,
+                },
+                {
+                  id: 1004,
+                  name: 'Item 4',
+                  price: 40.99,
+                },
+                {
+                  id: 1005,
+                  name: 'Item 5',
+                  price: 50.99,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              id: 201,
+              date: '2023-02-05',
+              items: [
+                {
+                  id: 3001,
+                  name: 'Item X1',
+                  price: 100.99,
+                },
+                {
+                  id: 3002,
+                  name: 'Item X2',
+                  price: 200.99,
+                },
+                {
+                  id: 3003,
+                  name: 'Item X3',
+                  price: 300.99,
+                },
+                {
+                  id: 3004,
+                  name: 'Item X4',
+                  price: 400.99,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              id: 301,
+              date: '2023-03-05',
+              items: [
+                {
+                  id: 6001,
+                  name: 'Item P1',
+                  price: 120.99,
+                },
+                {
+                  id: 6002,
+                  name: 'Item P2',
+                  price: 220.99,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              id: 401,
+              date: '2023-04-10',
+              items: [
+                {
+                  id: 7001,
+                  name: 'Item Q1',
+                  price: 130.99,
+                },
+                {
+                  id: 7002,
+                  name: 'Item Q2',
+                  price: 230.99,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          orders: [],
+        },
+        {
+          orders: [],
+        },
+      ],
+    });
+  });
+
+  it('should map non-array to array target', () => {
+    const order = {
+      id: 101,
+      date: '2023-01-15',
+      items: [
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+      ],
+    };
+
+    const parser = new Parser('orders[[0,3]]');
+    const path = parser.parsePath();
+    let result: JSONType;
+
+    // eslint-disable-next-line prefer-const
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      orders: [
+        {
+          id: 101,
+          date: '2023-01-15',
+          items: [
+            {
+              id: 1001,
+              name: 'Item 1',
+              price: 10.99,
+            },
+            {
+              id: 1002,
+              name: 'Item 2',
+              price: 20.99,
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('should map short array to non-existing array target', () => {
+    const order = [
+      {
+        id: 1001,
+        name: 'Item 1',
+        price: 10.99,
+      },
+      {
+        id: 1002,
+        name: 'Item 2',
+        price: 20.99,
+      },
+    ];
+
+    const parser = new Parser('items[[0,3]]');
+    const path = parser.parsePath();
+    let result: JSONType;
+
+    // eslint-disable-next-line prefer-const
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      items: [
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+      ],
+    });
+  });
+
+  it('should map short array to existing array target', () => {
+    const order = [
+      {
+        id: 1001,
+        name: 'Item 1',
+        price: 10.99,
+      },
+      {
+        id: 1002,
+        name: 'Item 2',
+        price: 20.99,
+      },
+    ];
+
+    const parser = new Parser('items[[0,3]]');
+    const path = parser.parsePath();
+    let result: JSONType = {
+      random: {
+        stuff: 'here',
+      },
+      items: [
+        {
+          id: 2001,
+          name: 'Item 2.1',
+          price: 110.99,
+        },
+        {
+          id: 2002,
+          name: 'Item 2.2',
+          price: 120.99,
+        },
+        {
+          id: 2003,
+          name: 'Item 2.3',
+          price: 130.99,
+        },
+      ],
+    };
+
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      random: {
+        stuff: 'here',
+      },
+      items: [
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+        {
+          id: 2003,
+          name: 'Item 2.3',
+          price: 130.99,
+        },
+      ],
+    });
+  });
+
+  it('should map short array to reverse existing array target', () => {
+    const order = [
+      {
+        id: 1001,
+        name: 'Item 1',
+        price: 10.99,
+      },
+      {
+        id: 1002,
+        name: 'Item 2',
+        price: 20.99,
+      },
+    ];
+
+    const parser = new Parser('items[[0,-3]]');
+    const path = parser.parsePath();
+
+    let result: JSONType = {
+      random: {
+        stuff: 'here',
+      },
+      items: [
+        {
+          id: 2001,
+          name: 'Item 2.1',
+          price: 110.99,
+        },
+        {
+          id: 2002,
+          name: 'Item 2.2',
+          price: 120.99,
+        },
+        {
+          id: 2003,
+          name: 'Item 2.3',
+          price: 130.99,
+        },
+      ],
+    };
+
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      random: {
+        stuff: 'here',
+      },
+      items: [
+        {
+          id: 2001,
+          name: 'Item 2.1',
+          price: 110.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+      ],
+    });
+  });
+
+  it('should map long array to non-existing array target', () => {
+    const order = [
+      {
+        id: 1001,
+        name: 'Item 1',
+        price: 10.99,
+      },
+      {
+        id: 1002,
+        name: 'Item 2',
+        price: 20.99,
+      },
+      {
+        id: 1003,
+        name: 'Item 3',
+        price: 30.99,
+      },
+      {
+        id: 1004,
+        name: 'Item 4',
+        price: 40.99,
+      },
+    ];
+
+    const parser = new Parser('items[[0,3]]');
+    const path = parser.parsePath();
+    let result: JSONType;
+
+    // eslint-disable-next-line prefer-const
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      items: [
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+        {
+          id: 1003,
+          name: 'Item 3',
+          price: 30.99,
+        },
+      ],
+    });
+  });
+
+  it('should map long array to reverse non-existing array target', () => {
+    const order = [
+      {
+        id: 1001,
+        name: 'Item 1',
+        price: 10.99,
+      },
+      {
+        id: 1002,
+        name: 'Item 2',
+        price: 20.99,
+      },
+      {
+        id: 1003,
+        name: 'Item 3',
+        price: 30.99,
+      },
+      {
+        id: 1004,
+        name: 'Item 4',
+        price: 40.99,
+      },
+    ];
+
+    const parser = new Parser('items[[0,-3]]');
+    const path = parser.parsePath();
+    let result: JSONType;
+
+    // eslint-disable-next-line prefer-const
+    result = injectValue(result, order, path);
+
+    expect(result).toStrictEqual({
+      items: [
+        {
+          id: 1003,
+          name: 'Item 3',
+          price: 30.99,
+        },
+        {
+          id: 1002,
+          name: 'Item 2',
+          price: 20.99,
+        },
+        {
+          id: 1001,
+          name: 'Item 1',
+          price: 10.99,
+        },
+      ],
+    });
   });
 });

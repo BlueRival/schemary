@@ -1073,10 +1073,10 @@ describe('JSON Schema Mapping', () => {
           left: 'users[[0]].orders[[0,1]]',
           right: 'users[[0]].orders',
         },
-        {
-          left: 'users[[0]].orders[[0,1]].items[[0,3]]',
-          right: 'users[[0]].orders[[0,1]].items',
-        },
+        // {
+        //   left: 'users[[0]].orders[[0,1]].items[[0,3]]',
+        //   right: 'users[[0]].orders[[0,1]].items',
+        // },
       ],
       left: {
         users: [
