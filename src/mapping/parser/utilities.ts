@@ -22,7 +22,7 @@ function generatePathString(path: unknown[]): string {
     .join('');
 }
 
-class PathError extends Error {
+export class PathError extends Error {
   constructor(message: unknown, traversedPath: PathSegment[]) {
     if (message instanceof PathError) {
       return message;

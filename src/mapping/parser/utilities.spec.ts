@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Parser } from './core.js';
-import { extractValue, injectValue } from './utilities.js';
+import { extractValue, injectValue, PathError } from './utilities.js';
 import { PathSegment } from './ast/types.js';
 import { JSONType } from '../../types.js';
 
@@ -122,6 +122,45 @@ const SOURCE_DATA = {
     ],
   ],
 };
+describe('PathError', () => {
+  it('pass through PathError', () => {
+    const parser = new Parser('matrix[[0]][[0]][2]');
+    const path = parser.parsePath();
+
+    const firstError = new PathError(new Error('nested error'), path);
+
+    firstError.stack = 'test value';
+
+    const secondError = new PathError(firstError, path);
+
+    expect(secondError.stack).toBe('test value');
+  });
+
+  it('pass through Error type', () => {
+    const parser = new Parser('matrix[[0]][[0]][2]');
+    const path = parser.parsePath();
+
+    const e = new Error('error type');
+    e.stack = 'Error type stack';
+
+    const pathError = new PathError(e, path);
+
+    expect(pathError.message).toBe(
+      'Exception at matrix[[0]][[0]][2]: error type',
+    );
+
+    expect(pathError.stack).toBe('Error type stack');
+  });
+
+  it('pass through non-error type', () => {
+    const parser = new Parser('matrix[[0]][[0]][2]');
+    const path = parser.parsePath();
+
+    const firstError = new PathError('text', path);
+
+    expect(firstError.message).toBe('Exception at matrix[[0]][[0]][2]: text');
+  });
+});
 
 describe('extractValue()', () => {
   it('should throw a useful exception for invalid segment type', () => {
@@ -142,6 +181,12 @@ describe('extractValue()', () => {
     }).toThrow(
       'Exception at matrix[[0]][[0]][2]<invalid path segment>: currentSegment.getValue is not a function',
     );
+  });
+
+  it('should throw a useful exception for invalid path', () => {
+    expect(() => {
+      extractValue(SOURCE_DATA, undefined as unknown as PathSegment[]);
+    }).toThrow('Path must be an array');
   });
 
   it('should correctly extract fields across array slice', () => {
@@ -396,6 +441,16 @@ describe('injectValue()', () => {
     }).toThrow(
       'Exception at matrix[[0]][[0]][2]<invalid path segment>: currentSegment.getValue is not a function',
     );
+  });
+
+  it('should throw a useful exception for invalid path', () => {
+    expect(() => {
+      injectValue(
+        undefined,
+        SOURCE_DATA,
+        undefined as unknown as PathSegment[],
+      );
+    }).toThrow('Path must be an array');
   });
 
   it('should passthrough on empty path', () => {
