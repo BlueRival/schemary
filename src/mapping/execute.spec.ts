@@ -68,13 +68,7 @@ function generateTests(group: string, tests: TestMapping[]) {
           expect(result).toStrictEqual(testResult);
         };
 
-        if (test.only) {
-          it.only(name, testFunction);
-        } else if (test.skip) {
-          it.skip(name, testFunction);
-        } else {
-          it(name, testFunction);
-        }
+        it(name, testFunction);
 
         if (test.bidirectional) {
           name += ' (Right-to-Left)';
@@ -91,13 +85,7 @@ function generateTests(group: string, tests: TestMapping[]) {
             expect(result).toStrictEqual(testInput);
           };
 
-          if (test.only) {
-            it.only(name, leftToRightTestFunction);
-          } else if (test.skip) {
-            it.skip(name, leftToRightTestFunction);
-          } else {
-            it(name, leftToRightTestFunction);
-          }
+          it(name, leftToRightTestFunction);
         }
       } catch (e) {
         const myError = e instanceof Error ? e : new Error(String(e));

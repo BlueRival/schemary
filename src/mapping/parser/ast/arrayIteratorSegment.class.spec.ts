@@ -181,16 +181,6 @@ describe('ArraySegment', () => {
         expect(result.result).toStrictEqual(expected);
       };
 
-      if (params?.only) {
-        it.only(testName, testFunction);
-        return;
-      }
-
-      if (params?.skip) {
-        it.skip(testName, testFunction);
-        return;
-      }
-
       it(testName, testFunction);
     };
 

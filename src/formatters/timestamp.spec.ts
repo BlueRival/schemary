@@ -462,10 +462,8 @@ const testDates: TestDatesTests[] = [
 ];
 
 describe('formatDate', () => {
-  for (const { name, input, formatHint, parts, only } of testDates) {
-    const myIt = only === true ? it.only : it;
-
-    myIt(name, () => {
+  for (const { name, input, formatHint, parts } of testDates) {
+    it(name, () => {
       const partsMatch: Record<string, string | undefined> = {};
       const partsExpect: Record<string, string> = {};
 

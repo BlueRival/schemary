@@ -31,9 +31,7 @@ describe('ObjectFieldSegment', () => {
       const fieldName = params.fieldName;
       const expected = params.expected;
 
-      const myIt = params.only === true ? it.only : params.skip ? it.skip : it;
-
-      myIt(testName, () => {
+      it(testName, () => {
         const segment = new ObjectIndexSegment(fieldName, fieldName);
         const result = segment.getValue(source);
         expect(result).toStrictEqual(expected);
