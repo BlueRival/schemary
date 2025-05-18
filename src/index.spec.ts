@@ -3,6 +3,7 @@ import * as Index from './index.js';
 import * as Types from './types.scoped.js';
 import * as Schema from './schema.js';
 import * as Mapping from './mapping.js';
+import * as JSON from './json.js';
 
 describe('index.ts', () => {
   it('should export Types module', () => {
@@ -18,9 +19,15 @@ describe('index.ts', () => {
   });
 
   it('should export Mapping module', () => {
-    expect(Index.Schema.Mapping).toBeDefined();
+    expect(Index.Mapping).toBeDefined();
     // Verify that it's the same module we're importing directly
-    expect(Index.Schema.Mapping).toEqual(Mapping);
+    expect(Index.Mapping).toEqual(Mapping);
+  });
+
+  it('should export JSON module', () => {
+    expect(Index.JSON).toBeDefined();
+    // Verify that it's the same module we're importing directly
+    expect(Index.JSON).toEqual(JSON);
   });
 
   // Note: We don't test for specific types from the Types module
@@ -44,11 +51,27 @@ describe('index.ts', () => {
 
   it('should export specific functions and classes from Mapping module', () => {
     // Check the main mapping exports
-    expect(Index.Schema.Mapping.PlanRuleOrder).toBeDefined();
-    expect(Index.Schema.Mapping.Plan).toBeDefined();
-    expect(typeof Index.Schema.Mapping.Plan).toBe('function');
+    expect(Index.Mapping.PlanRuleOrder).toBeDefined();
+    expect(Index.Mapping.Plan).toBeDefined();
+    expect(typeof Index.Mapping.Plan).toBe('function');
 
-    expect(Index.Schema.Mapping.compilePlan).toBeDefined();
-    expect(typeof Index.Schema.Mapping.compilePlan).toBe('function');
+    expect(Index.Mapping.compilePlan).toBeDefined();
+    expect(typeof Index.Mapping.compilePlan).toBe('function');
+
+    expect(Index.Mapping.FormatType).toBeDefined();
+    expect(typeof Index.Mapping.FormatType).toBe(typeof Mapping.FormatType);
+
+    expect(Index.Mapping.Formatting).toBeDefined();
+    expect(typeof Index.Mapping.Formatting.TimeStamp).toBe(
+      typeof Mapping.Formatting,
+    );
+  });
+
+  it('should export specific functions from JSON module', () => {
+    expect(Index.JSON.parse).toBeDefined();
+    expect(typeof Index.JSON.parse).toBe('function');
+
+    expect(Index.JSON.stringify).toBeDefined();
+    expect(typeof Index.JSON.stringify).toBe('function');
   });
 });

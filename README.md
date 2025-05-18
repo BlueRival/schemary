@@ -1,970 +1,648 @@
-# schemary
+# Schemary
 
-A schema validation and mapping utility library for TypeScript that uses [Zod](https://github.com/colinhacks/zod) for data validation and transformation.
+**A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript
+**
 
-## Overview
+## 🚀 Major Release: v1.0
 
-Schemary provides powerful tools for working with structured data, focusing on validation, transformation, and mapping between different data structures. Built on top of Zod, it extends its capabilities to make complex data operations easier, safer, and more maintainable.
+Schemary has been completely rewritten from the ground up! After over 10 years as a pre-v1 library, **version 1.0**
+represents a total overhaul with dramatically expanded capabilities. This is not an incremental update—it's a entirely
+new, far more powerful library.
 
-## Key Features
+## ✨ What Makes Schemary Special
 
-- **Schema-based validation** - Validate JSON data against Zod schemas
-- **Data transformation** - Convert data between different structures
-- **Bidirectional mapping** - Transform data back and forth between schemas
-- **Type safety** - Full TypeScript support with proper type inference
-- **Timestamp formatting** - Convert between different timestamp formats
-- **JSON utilities** - Parse and stringify JSON with schema validation
+- **🔄 Bidirectional Mapping**: Transform data structures in both directions with a single configuration
+- **🗺️ Advanced Path Navigation**: Powerful syntax for array slicing, negative indexing, and nested field access
+- **🛡️ Type Safety**: Full TypeScript support with runtime validation via Zod schemas
+- **🔀 Schema Transformation**: Shift data between different object shapes while preserving encoding
+- **💎 Immutable Operations**: All operations return new data without side effects
+- **⚡ High Performance**: Compiled mapping plans for efficient repeated transformations
 
-## Installation
+## 📦 Installation
 
 ```bash
 npm install schemary
 ```
 
-## API Structure
+Optional, if you will be using any Zod schema transformations:
 
-Schemary organizes its functionality in a clean, namespaced structure:
-
-- **Schema**: Core validation and transformation functions
-- **Mapping**: Bidirectional schema mapping utilities
-- **Formatters**: Utilities for formatting different data types
-- **Type exports**: JSON and schema-related type definitions
-
-## Schema Validation and Transformation
-
-### Basic Usage
-
-```typescript
-import { z } from 'zod';
-import { Schema } from 'schemary';
-
-// Define a schema
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  email: z.string().email(),
-  active: z.boolean().default(true),
-});
-
-// Input data with extra field
-const input = {
-  id: 1,
-  name: 'John Doe',
-  email: 'john@example.com',
-  extraField: 'will be removed',
-};
-
-// Validate the input against the schema
-const validUser = Schema.validate(input, UserSchema);
-// Result: { id: 1, name: 'John Doe', email: 'john@example.com', active: true }
+```bash
+npm install zod@3 --save
 ```
 
-### Overriding Values
+Optional, if you will be using any TimeStamp transformations in Mappings:
 
-```typescript
-import { z } from 'zod';
-import { Schema } from 'schemary';
-
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  email: z.string().email(),
-  role: z.string(),
-});
-
-const input = {
-  id: 1,
-  name: 'John Doe',
-  email: 'john@example.com',
-};
-
-// Provide missing fields as overrides
-const validUser = Schema.validate(input, UserSchema, { role: 'admin' });
-// Result: { id: 1, name: 'John Doe', email: 'john@example.com', role: 'admin' }
+```bash
+npm install luxon@3 --save
 ```
 
-### Arrays of Objects
+**⚠️ ESM Only**: Schemary is an ESM-only package. Your project needs `"type": "module"` in `package.json` or use `.mjs`
+files.
+
+## 🚦 Quick Start
+
+1. Validate input data
 
 ```typescript
-import { z } from 'zod';
 import { Schema } from 'schemary';
+import { z } from 'zod';
 
-const PersonSchema = z.object({
+// Define schemas
+export const UserSchema = z.object({
   name: z.string(),
+  email: z.string().email(),
   age: z.number(),
 });
 
-const PeopleSchema = z.array(PersonSchema);
+export type User = z.infer<typeof UserSchema>
 
-const input = [
-  { name: 'Alice', age: 25, extraField: 'extra' },
-  { name: 'Bob', age: 30 },
-];
-
-const validPeople = Schema.validate(input, PeopleSchema);
-// Result: [{ name: 'Alice', age: 25 }, { name: 'Bob', age: 30 }]
+function processUser(user: User): void {
+  const userValidated = Schema.validate(user, UserSchema);
+}
 ```
 
-### Union Types
+2. Extract nested data with defaults
 
 ```typescript
-import { z } from 'zod';
 import { Schema } from 'schemary';
+import { z } from 'zod';
 
-const AdminSchema = z.object({
-  type: z.literal('admin'),
-  id: z.number(),
-  role: z.string(),
-  accessLevel: z.number(),
+const NotificationsSchema = z.object({
+  email: z.boolean(),
+  sms: z.boolean(),
+})
+  .strict();
+
+const data: Types.JSONType = {
+  firstName: 'Ricky',
+  lastName: 'Bobby',
+  email: 'rbobby@wonderbread.com',
+  phone: '103-555-2662',
+  preferences: {
+    notifications: {
+      email: true,
+      sms: true,
+    },
+  },
+};
+
+// Overrides and defaults at extract()
+const settings = Schema.extract(data, 'user.preferences.notifications', NotificationsSchema, {
+  defaults: { email: true, sms: false },
 });
 
+enum DatabaseMode {
+  'READ' = 'read-only',
+  'WRITE' = 'write-only',
+  'DUPLEX' = 'duplex'
+}
+
+// Define schemas with defaults
+const DatabaseConfigSchema = z.object({
+  host: z.string(),
+  mode: z.nativeEnum(DatabaseMode).default(DatabaseMode.DUPLEX),
+  port: z.number().min(1).default(3000),
+  tls: z.boolean().default(true),
+})
+  .strict();
+
+
+const mainDatabaseConfig = Schema.extract(config, 'databases.main', DatabaseConfigSchema);
+const metricsDatabaseConfig = Schema.extract(config, 'databases.metrics', DatabaseConfigSchema);
+```
+
+3. Process JSON strings
+
+```typescript
+import { JSON, Types } from 'schemary';
+import { z } from 'zod';
+
+// Define schemas
 const UserSchema = z.object({
-  type: z.literal('user'),
-  id: z.number(),
   name: z.string(),
   email: z.string().email(),
+  age: z.number(),
 });
 
-// Define a discriminated union schema
-const PeopleSchema = z.discriminatedUnion('type', [AdminSchema, UserSchema]);
-
-// Input data for an admin
-const adminInput = {
-  type: 'admin',
-  id: 1,
-  role: 'superuser',
-  accessLevel: 10,
-  extraField: 'should be removed',
-};
-
-// Validate the input against the union schema
-const validAdmin = Schema.validate(adminInput, PeopleSchema);
-// Result: { type: 'admin', id: 1, role: 'superuser', accessLevel: 10 }
-```
-
-### Cloning Objects
-
-```typescript
-import { Schema } from 'schemary';
-
-const original = {
-  user: {
-    name: 'John',
-    profile: {
-      age: 30,
-      preferences: ['dark', 'compact']
-    }
-  }
-};
-
-const cloned = Schema.clone(original);
-// Result: Deep copy of the original object
-```
-
-### Extracting Data
-
-```typescript
-import { z } from 'zod';
-import { Schema } from 'schemary';
-
-const config = {
-  database: {
-    host: 'localhost',
-    port: 5432,
-    credentials: {
-      username: 'admin',
-      password: 'secret'
-    }
-  },
-  server: {
-    port: 3000
-  }
-};
-
-// Extract and validate a specific part of the object
-const dbCredentials = Schema.extractPath(
-  config, 
-  'database.credentials', 
-  z.object({
-    username: z.string(),
-    password: z.string()
-  })
-);
-// Result: { username: 'admin', password: 'secret' }
-```
-
-### Validating Request Parameters
-
-```typescript
-import { z } from 'zod';
-import { Schema } from 'schemary';
+const User = z.infer<typeof UserSchema>;
 
 const ParamsSchema = z.object({
   id: z.string(),
-  page: z.number().optional().default(1),
-  limit: z.number().optional().default(10),
 });
 
-const requestQuery = {
-  id: '12345',
-  page: '2', // Notice this is a string
-};
+@POST()
+async function userUpdate(
+  @Body()
+  postBody: string,
+): void {
+  const userValidated = Schema.jsonParse(postBody, UserSchema);
+}
 
-try {
-  const params = Schema.parseParams(requestQuery, ParamsSchema);
-  // Result: { id: '12345', page: 2, limit: 10 }
-} catch (error) {
-  // Handle validation error
-  console.error(error.message);
+@GET()
+async function userGet(
+  @Params
+  params: Types.JSONType,
+): User {
+
+  const requestParams = Schema.validate(params, ParamsSchema);
+
+  const user = await userModel.get(requestParams.id);
+
+  // pretty format output
+  return JSON.stringify(user, UserSchema, null, 2);
+
 }
 ```
 
-### Working with JSON
+4. Shift Schema to add/remove fields without full mapping definition of similar schemas
 
 ```typescript
+import { Schema, Types } from 'schemary';
 import { z } from 'zod';
-import { Schema } from 'schemary';
 
+enum EventType {
+  'USER_UPDATE' = 'user-update',
+  'INSURANCE_UPDATE' = 'insurance-update',
+}
+
+// Define schemas
+const EventSchema = z.object({
+  type: z.nativeEnum(EventType),
+  data: Types.JSONSchema,
+});
+
+type Event = z.infer<typeof EventSchema>;
+
+const HandlerRequestSchema = z.object({
+  data: Types.JSONSchema,
+});
+
+async function router(event: Event): Types.JSON {
+
+  const handler = await broker.get(event.type);
+
+  const request = Schema.shift(event, HandlerRequestSchema);
+
+  return handler.request(request);
+
+}
+
+```
+
+5. Create bidirectional mappings between dissimilar schemas
+
+```typescript
+import { Schema, Types, Mapping } from 'schemary';
+import { z } from 'zod';
+
+// Define schemas
 const UserSchema = z.object({
-  id: z.number(),
   name: z.string(),
   email: z.string().email(),
-  active: z.boolean().default(true),
-});
-
-// Parse JSON string with validation
-const jsonString = '{"id": 1, "name": "John", "email": "john@example.com"}';
-const user = Schema.parseJSON(jsonString, UserSchema);
-// Result: { id: 1, name: 'John', email: 'john@example.com', active: true }
-
-// Convert object to JSON with validation
-const obj = {
-  id: 2,
-  name: 'Alice',
-  email: 'alice@example.com',
-  extraField: 'will be removed'
-};
-const jsonOutput = Schema.stringifyJSON(obj, UserSchema, null, 2);
-// Result: Formatted JSON string without extraField
-```
-
-## Timestamp Formatting
-
-Schemary provides utilities for formatting timestamps between different formats through the `Formatters.Timestamp` namespace.
-
-```typescript
-import { Formatters } from 'schemary';
-
-// Format a date string to different formats
-const isoDate = '2023-01-15T14:30:45.078Z';
-
-// Convert to Unix timestamp
-const unixTimestamp = Formatters.Timestamp.format(isoDate, Formatters.Timestamp.Format.UNIX);
-// Result: '1673795445078' (milliseconds since epoch)
-
-// Convert to RFC2822 format
-const rfc2822Date = Formatters.Timestamp.format(isoDate, Formatters.Timestamp.Format.RFC2822);
-// Result: 'Sun, 15 Jan 2023 14:30:45 +0000'
-
-// Convert to HTTP format
-const httpDate = Formatters.Timestamp.format(isoDate, Formatters.Timestamp.Format.HTTP);
-// Result: 'Sun, 15 Jan 2023 14:30:45 GMT'
-
-// Convert to SQL format
-const sqlDate = Formatters.Timestamp.format(isoDate, Formatters.Timestamp.Format.SQL);
-// Result: '2023-01-15 14:30:45.078 Z'
-
-// Custom format
-const customFormat = Formatters.Timestamp.format(isoDate, 'MM/dd/yyyy hh:mm a');
-// Result: '01/15/2023 02:30 PM'
-```
-
-## Schema Mapping
-
-Schemary provides powerful tools for mapping data between different schemas through the `Mapping` namespace.
-
-### Overview
-
-The schema mapping functionality consists of:
-
-- **Mapping.compile**: A function that compiles mapping rules into a reusable mapping plan
-- **MappingPlan**: A class representing a compiled mapping plan with methods for bidirectional data transformation
-- **MappingRule**: A type defining the structure of mapping rules
-- **Mapping.PlanRuleOrder**: An enum controlling the order in which rules are applied
-
-### Mapping Rules
-
-Mapping rules define relationships between fields in the left and right schemas:
-
-```typescript
-interface MappingRule {
-  left?: string;               // Path to the field in the left schema
-  right?: string;              // Path to the field in the right schema
-  literal?: any;               // Literal value to use (when left or right is missing)
-  leftTransform?: Function;    // Transform function for right-to-left mapping
-  rightTransform?: Function;   // Transform function for left-to-right mapping
-  format?: {                   // Format conversions (e.g., date formats)
-    type: string;              // Formatter type (e.g., 'timestamp')
-    left: string;              // Format for left value
-    right: string;             // Format for right value
-  };
-}
-```
-
-Each rule can include:
-- **Field paths**: Specify which fields to map between schemas
-- **Transformations**: Functions to transform values during mapping
-- **Literal values**: Default values to use when a field doesn't exist
-- **Format specifications**: Automatic formatting for specific data types like timestamps
-
-### Basic Mapping
-
-```typescript
-import { z } from 'zod';
-import { Mapping, MappingRule } from 'schemary';
-
-// Define schemas for left and right sides
-const LeftSchema = z.object({
-  id: z.number(),
-  username: z.string(),
-  dob: z.string(),
   age: z.number(),
-  isActive: z.boolean().optional(),
 });
 
-const RightSchema = z.object({
-  identifier: z.number(),
-  user: z.string(),
-  dateOfBirth: z.string(),
+const ProfileSchema = z.object({
+  fullName: z.string(),
+  contactEmail: z.string(),
   yearsOld: z.number(),
-  active: z.boolean().optional(),
-  extraInfo: z.string(),
-});
-
-// Define mapping rules
-const mappingRules: MappingRule[] = [
-  { left: 'id', right: 'identifier' },
-  { left: 'username', right: 'user' },
-  { left: 'dob', right: 'dateOfBirth' },
-  { left: 'age', right: 'yearsOld' },
-  { left: 'isActive', right: 'active' },
-  { literal: 'Additional information', right: 'extraInfo' },
-];
-
-// Compile the mapping plan
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: LeftSchema,
-  rightSchema: RightSchema,
-});
-
-// Source data
-const leftData = {
-  id: 123,
-  username: 'johndoe',
-  dob: '1990-01-15',
-  age: 33,
-  isActive: true,
-};
-
-// Map left to right
-const rightData = plan.map(leftData);
-// Result: {
-//   identifier: 123,
-//   user: 'johndoe',
-//   dateOfBirth: '1990-01-15',
-//   yearsOld: 33,
-//   active: true,
-//   extraInfo: 'Additional information'
-// }
-
-// Map right back to left
-const backToLeft = plan.reverseMap(rightData);
-// Result: {
-//   id: 123,
-//   username: 'johndoe',
-//   dob: '1990-01-15',
-//   age: 33,
-//   isActive: true
-// }
-```
-
-### Using Format Field for Timestamp Conversion
-
-The `format` field in mapping rules provides a convenient way to automatically convert formats such as timestamps between different representations during mapping. This is simpler than writing custom transform functions for common format conversions.
-
-```typescript
-import { z } from 'zod';
-import { Mapping, MappingRule, Formatters } from 'schemary';
-
-// Define schemas with different date formats
-const LeftSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  // MM/DD/YYYY format
-  createdDate: z.string().regex(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/),
-  // Unix timestamp (milliseconds)
-  updatedAt: z.string(),
-});
-
-const RightSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  // ISO 8601 format
-  created: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/),
-  // HTTP date format
-  lastModified: z.string(),
-});
-
-// Define mapping rules with format conversions
-const mappingRules: MappingRule[] = [
-  { left: 'id', right: 'id' },
-  { left: 'name', right: 'name' },
-  {
-    left: 'createdDate',
-    right: 'created',
-    // Automatically convert between MM/DD/YYYY and ISO 8601 formats
-    format: {
-      type: 'timestamp', 
-      left: 'MM/dd/yyyy',            // Left schema format (MM/DD/YYYY)
-      right: Formatters.Timestamp.Format.ISO8601  // Right schema format (ISO 8601)
-    }
-  },
-  {
-    left: 'updatedAt',
-    right: 'lastModified',
-    // Automatically convert between Unix timestamp and HTTP date format
-    format: {
-      type: 'timestamp',
-      left: Formatters.Timestamp.Format.UNIX,    // Left schema format (Unix timestamp)
-      right: Formatters.Timestamp.Format.HTTP    // Right schema format (HTTP date)
-    }
-  }
-];
-
-// Compile the mapping plan
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: LeftSchema,
-  rightSchema: RightSchema,
-});
-
-// Source data
-const leftData = {
-  id: 1001,
-  name: 'Project Alpha',
-  createdDate: '01/15/2023',         // MM/DD/YYYY format
-  updatedAt: '1673795445078',        // Unix timestamp (milliseconds)
-};
-
-// Map left to right
-const rightData = plan.map(leftData);
-// Result: {
-//   id: 1001,
-//   name: 'Project Alpha',
-//   created: '2023-01-15T00:00:00.000Z',           // ISO 8601 format
-//   lastModified: 'Sun, 15 Jan 2023 14:30:45 GMT'  // HTTP date format
-// }
-
-// Map right back to left
-const backToLeft = plan.reverseMap(rightData);
-// Result: {
-//   id: 1001,
-//   name: 'Project Alpha',
-//   createdDate: '01/15/2023',     // Back to MM/DD/YYYY format
-//   updatedAt: '1673795445000'     // Back to Unix timestamp
-// }
-```
-
-The `format` field supports:
-
-1. **Predefined format shortcuts** using `Formatters.Timestamp.Format`:
-   - `UNIX` - Unix timestamp (milliseconds since epoch)
-   - `ISO8601` - ISO 8601 format (e.g., "2023-01-15T14:30:45.078Z")
-   - `RFC2822` - RFC 2822 format (e.g., "Sun, 15 Jan 2023 14:30:45 +0000")
-   - `HTTP` - HTTP date format (e.g., "Sun, 15 Jan 2023 14:30:45 GMT")
-   - `SQL` - SQL date format (e.g., "2023-01-15 14:30:45.078 Z")
-
-2. **Custom format strings** using Luxon's format tokens:
-   - `yyyy-MM-dd` - Year-month-day (e.g., "2023-01-15")
-   - `MM/dd/yyyy` - Month/day/year (e.g., "01/15/2023")
-   - `dd.MM.yyyy HH:mm:ss` - Day.month.year hour:minute:second (e.g., "15.01.2023 14:30:45")
-
-Using the `format` field is more convenient and less error-prone than writing custom transform functions for timestamp conversions.
-
-### Transforming Values During Mapping
-
-In this example, we transform boolean values to numbers (1/0) when mapping between schemas:
-
-```typescript
-import { z } from 'zod';
-import { Mapping, MappingRule } from 'schemary';
-
-// Define schemas for left and right sides
-const LeftSchema = z.object({
-  name: z.string(),
   isActive: z.boolean(),
 });
 
-const RightSchema = z.object({
-  name: z.string(),
-  status: z.number(), // Uses 1/0 instead of true/false
-});
-
-// Define mapping rules with transformations
-const mappingRules: MappingRule[] = [
-  { left: 'name', right: 'name' },
-  { 
-    left: 'isActive', 
-    right: 'status',
-    // Transform boolean to number (1/0) when mapping left to right
-    rightTransform: (isActive: boolean): number => {
-      return isActive ? 1 : 0;
-    },
-    // Transform number (1/0) to boolean when mapping right to left
-    leftTransform: (status: number): boolean => {
-      return status === 1;
-    },
-  },
-];
-
-// Compile the mapping plan
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: LeftSchema,
-  rightSchema: RightSchema,
-});
-
-// Source data with boolean
-const leftData = { name: 'John', isActive: true };
-
-// Map to schema with number status
-const rightData = plan.map(leftData);
-// Result: { name: 'John', status: 1 }
-
-// Map back to schema with boolean
-const backToLeft = plan.reverseMap(rightData);
-// Result: { name: 'John', isActive: true }
-
-// Example with false/0
-const inactiveUser = { name: 'Alice', isActive: false };
-const rightInactive = plan.map(inactiveUser);
-// Result: { name: 'Alice', status: 0 }
-```
-
-### Advanced Mapping Features
-
-#### Field Navigation
-
-Access object properties using dot notation or array indexing:
-
-```typescript
-const mappingRules: MappingRule[] = [
-  // Simple field
-  { left: 'user.name', right: 'userName' },
-  
-  // Array element access
-  { left: 'users[0].name', right: 'firstUserName' },
-  { left: 'users[-1].name', right: 'lastUserName' }, // Last element
-  
-  // Nested fields
-  { left: 'profile.contact.email', right: 'userEmail' },
-];
-```
-
-#### Specifying Rule Order
-
-Control the order in which rules are applied:
-
-```typescript
-import { Mapping, MappingRule } from 'schemary';
-
-// Define schemas and rules...
-
-// Compile with specific rule order
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: LeftSchema,
-  rightSchema: RightSchema,
-  order: {
-    toRight: Mapping.PlanRuleOrder.DESC, // Apply rules in reverse order for left-to-right mapping
-    toLeft: Mapping.PlanRuleOrder.ASC,   // Apply rules in original order for right-to-left mapping
-  },
-});
-```
-
-- **ASC order** (default): Rules are applied in the order they are defined. Later rules can override earlier ones.
-- **DESC order**: Rules are applied in reverse order. Earlier rules take precedence over later rules.
-
-This is particularly useful when you have overlapping rules or complex transformations that depend on the order of application.
-
-#### Providing Overrides During Mapping
-
-You can override specific values during mapping:
-
-```typescript
-// Map with overrides
-const result = plan.map(sourceData, {
-  'targetField': 'overrideValue',  // Override the mapped value
-});
-```
-
-Overrides are applied after all mapping rules, allowing you to provide custom values for specific fields regardless of the mapping rules.
-
-#### Mapping Complex Structures
-
-Mapping between deeply nested structures:
-
-```typescript
-import { z } from 'zod';
-import { Mapping, MappingRule } from 'schemary';
-
-const CustomerSchema = z.object({
-  customerInfo: z.object({
-    id: z.number(),
-    name: z.object({
-      first: z.string(),
-      last: z.string(),
-    }),
-    contact: z.object({
-      email: z.string().email(),
-      phone: z.string().optional(),
-    }),
-  }),
-  orders: z.array(
-    z.object({
-      orderId: z.string(),
-      items: z.array(z.string()),
-    })
-  ).optional(),
-});
-
-const UserSchema = z.object({
-  userId: z.number(),
-  fullName: z.string(),
-  email: z.string().email(),
-  phoneNumber: z.string().optional(),
-  purchaseHistory: z.array(
-    z.object({
-      id: z.string(),
-      products: z.array(z.string()),
-    })
-  ).optional(),
-});
-
-// Define mapping rules
-const mappingRules: MappingRule[] = [
-  { left: 'customerInfo.id', right: 'userId' },
-  { 
-    left: 'customerInfo.name', 
-    right: 'fullName',
-    // Combine first and last name into fullName
-    rightTransform: (name) => `${name.first} ${name.last}`,
-    // Split fullName into first and last name components
-    leftTransform: (fullName) => {
-      const parts = fullName.split(' ');
-      return {
-        first: parts[0],
-        last: parts.slice(1).join(' '),
-      };
-    },
-  },
-  { left: 'customerInfo.contact.email', right: 'email' },
-  { left: 'customerInfo.contact.phone', right: 'phoneNumber' },
-  { left: 'orders', right: 'purchaseHistory', 
-    rightTransform: (orders) => 
-      orders?.map(order => ({ 
-        id: order.orderId, 
-        products: order.items 
-      })),
-    leftTransform: (history) => 
-      history?.map(purchase => ({ 
-        orderId: purchase.id, 
-        items: purchase.products 
-      })),
-  },
-];
-
-// Compile the mapping plan
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: CustomerSchema,
-  rightSchema: UserSchema,
-});
-
-// Use the plan for mapping
-const customer = {
-  customerInfo: {
-    id: 1001,
-    name: { first: 'John', last: 'Doe' },
-    contact: { email: 'john.doe@example.com', phone: '555-1234' }
-  },
-  orders: [
-    { orderId: 'ORD-001', items: ['Product A', 'Product B'] }
-  ]
-};
-
-const user = plan.map(customer);
-/* Result:
-{
-  userId: 1001,
-  fullName: 'John Doe',
-  email: 'john.doe@example.com',
-  phoneNumber: '555-1234',
-  purchaseHistory: [
-    { id: 'ORD-001', products: ['Product A', 'Product B'] }
-  ]
-}
-*/
-```
-
-### Working with Literal Values
-
-Provide default or fixed values for fields that don't exist in the source schema:
-
-```typescript
-import { z } from 'zod';
-import { Mapping, MappingRule } from 'schemary';
-
-const LeftSchema = z.object({
-  username: z.string(),
-  email: z.string().email(),
-});
-
-const RightSchema = z.object({
-  userName: z.string(),
-  emailAddress: z.string().email(),
-  status: z.string(),
-  createdAt: z.string(),
-});
-
-// Define mapping rules with literal values
-const mappingRules: MappingRule[] = [
-  { left: 'username', right: 'userName' },
-  { left: 'email', right: 'emailAddress' },
-  { literal: 'active', right: 'status' },  // Fixed value for right schema
-  { literal: new Date().toISOString(), right: 'createdAt' },  // Dynamic value
-];
-
-// Compile the mapping plan
-const plan = Mapping.compile(mappingRules, {
-  leftSchema: LeftSchema,
-  rightSchema: RightSchema,
-});
-
-// Source data
-const leftData = {
-  username: 'johndoe',
-  email: 'john@example.com',
-};
-
-// Map left to right
-const rightData = plan.map(leftData);
-// Result: {
-//   userName: 'johndoe',
-//   emailAddress: 'john@example.com',
-//   status: 'active',
-//   createdAt: '2023-01-15T14:30:45.078Z' (timestamp)
-// }
-```
-
-## Working with Types
-
-Schemary provides convenient type definitions for JSON and schema operations:
-
-```typescript
-import { z } from 'zod';
-import { Schema, JsonObject, SchemaOverrides } from 'schemary';
-
-// Working with JSON types
-function processData(data: JsonObject): JsonObject {
-  // Process the data and return it
-  return data;
-}
-
-// Working with schema overrides
-function createWithDefaults<T>(
-  input: JsonObject, 
-  schema: z.ZodType<T>, 
-  overrides: SchemaOverrides<T>
-): T {
-  return Schema.validate(input, schema, overrides);
-}
-
-// Example use
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  active: z.boolean().default(true)
-});
-
-const userData = { id: 1, name: 'Alice' };
-const user = createWithDefaults(userData, UserSchema, { active: false });
-// Result: { id: 1, name: 'Alice', active: false }
-```
-
-### Available Types
-
-Schemary exports the following type definitions:
-
-#### JSON Types
-- `JsonType`: Any valid JSON value
-- `JsonObject`: A JSON object with string keys
-- `JsonArray`: A JSON array
-- `JsonObjectArray`: An array of JSON objects
-- `JsonAny`: Either a JSON object or array
-
-#### Schema Types
-- `SchemaOverrides<T>`: Type for providing overrides to schema validation
-- `SchemaObjectInput<T>`: Type for object schema inputs
-- `SchemaArrayInput<T>`: Type for array schema inputs
-
-#### Mapping Types
-- `MappingRule`: Type for mapping rule definition
-- `MappingParams`: Type for mapping plan parameters
-- `MappingPlan`: Class type for a compiled mapping plan
-
-## Advanced Examples
-
-### Complex Data Transformations
-
-```typescript
-import { z } from 'zod';
-import { Schema } from 'schemary';
-
-// Define a complex schema with nested objects and arrays
-const ComplexSchema = z.object({
-  id: z.number(),
-  user: z.object({
-    profile: z.object({
-      name: z.string(),
-      contact: z.object({
-        email: z.string().email(),
-        phone: z.string().optional(),
-      }),
-    }),
-    preferences: z.object({
-      theme: z.enum(['light', 'dark']).default('light'),
-      notifications: z.boolean().default(true),
-    }),
-  }),
-  permissions: z.array(
-    z.object({
-      resource: z.string(),
-      actions: z.array(z.string()),
-    })
-  ).default([]),
-});
-
-// Input data with missing or extra fields
-const complexInput = {
-  id: 123,
-  user: {
-    profile: {
-      name: 'John Doe',
-      contact: {
-        email: 'john@example.com',
-        extraField: 'should be removed',
-      },
-      // preferences missing, will use defaults
-    },
-  },
-  extraTopLevel: 'should be removed',
-};
-
-// Override values
-const overrides = {
-  permissions: [
-    { resource: 'posts', actions: ['read', 'write'] },
-    { resource: 'comments', actions: ['read'] },
+const plan = Mapping.compilePlan({
+  leftSchema: UserSchema,
+  rightSchema: ProfileSchema,
+  rules: [
+    { left: 'name', right: 'fullName' },
+    { left: 'email', right: 'contactEmail' },
+    { left: 'age', right: 'yearsOld' },
+    { literal: true, right: 'isActive' },
   ],
-};
+});
 
-// Convert with schema validation and overrides
-const validComplex = Schema.validate(complexInput, ComplexSchema, overrides);
-/* Result:
-{
-  id: 123,
-  user: {
-    profile: {
-      name: 'John Doe',
-      contact: {
-        email: 'john@example.com'
-      }
-    },
-    preferences: {
-      theme: 'light',
-      notifications: true
-    }
-  },
-  permissions: [
-    { resource: 'posts', actions: ['read', 'write'] },
-    { resource: 'comments', actions: ['read'] }
-  ]
-}
-*/
+// Transform in both directions
+const profile = plan.map(user);
+const backToUser = plan.reverseMap(profile);
 ```
 
-### API Request/Response Handling
+6. Create strongly-typed defaults and override parameters
 
 ```typescript
+import { Schema, Types } from 'schemary';
 import { z } from 'zod';
-import { Schema } from 'schemary';
 
-// Define schema for API request
-const RequestSchema = z.object({
-  user: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
-  action: z.string(),
-});
+class AbstractDatabaseStorage<T> {
 
-// Define schema for API response
-const ResponseSchema = z.object({
-  success: z.boolean(),
-  data: z.object({
-    userId: z.number(),
-    message: z.string(),
-  }).optional(),
-  error: z.string().optional(),
-});
+  // When .save() is called with defaults, TypeScript won't infer the type of T from the 
+  // defaults, which will likely be incomplete. It will infer it from record, which is correct.
+  public async save<T>(record: T, defaults?: Types.Partial<T>): string {
 
-// Create a request handler
-async function handleRequest(requestBody) {
-  try {
-    // Parse and validate request JSON
-    const request = Schema.parseJSON(requestBody, RequestSchema);
-
-    // Process the request
-    let response;
-    if (request.action === 'register') {
-      response = {
-        success: true,
-        data: {
-          userId: 12345,
-          message: `User ${request.user.name} registered successfully`,
-        },
-      };
-    } else {
-      response = {
-        success: false,
-        error: 'Invalid action',
-      };
-    }
-
-    // Validate and stringify the response
-    return Schema.stringifyJSON(response, ResponseSchema);
-  } catch (error) {
-    // Handle validation errors
-    const errorResponse = {
-      success: false,
-      error: error.message,
-    };
-    return Schema.stringifyJSON(errorResponse, ResponseSchema);
   }
+
 }
 
-// Example usage
-const requestBody = '{"user":{"name":"John","email":"john@example.com"},"action":"register"}';
-const responseJson = await handleRequest(requestBody);
+````
+
+## 📚 Core Modules
+
+### 🏗️ Types Module
+
+Export namespace for TypeScript types representing JSON data structures and utility types.
+
+These types are useful for creating abstract, generic libraries designed to handle arbitrary data without concern for
+specific underlying datastructures.
+
+**Available Types:**
+
+- `Types.Primitive` - String, number, boolean, null, undefined
+- `Types.JSON` - Any valid JSON value or structure, recursively: object of fields, array or objects, array of
+  primitives, etc
+- `Types.Schema` - Zod schema for Types.JSON
+- `Types.Object` - JSON structure with Object root: { string: Types.JSON, ... }
+- `Types.ObjectSchema` - Zod schema for Types.Object
+- `Types.Array` - JSON structure with Array root: Types.JSON[]
+- `Types.ArraySchema` - Zod schema for Types.Array
+- `Types.ArrayOfObjects` - JSON structure: Types.Object[]
+- `Types.ArrayOfObjectSchema` - Zod schema for arrays of objects
+- `Types.Any` - Any JSON-compatible non-primitive root (object / array): Types.Object | Types.Array |
+  Types.ArrayOfObjects
+- `Types.AnySchema` - Zod schema for Types.Any
+- `Types.Partial<T>` - Type for partial object overrides and defaults that will not allow inferring type from T
+- `Types.NoInfer<T>` - Utility type to prevent TypeScript inference of type T with generics
+
+### 🛡️ Schema Module
+
+#### `Schema.validate(data, schema)`
+
+Validates data against a Zod schema with detailed error messages. While z.parse() does this,
+the Schemary error messages are a little more conducive for error logs and API responses.
+
+```typescript
+const UserSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  age: z.number().min(0).max(150),
+});
+
+try {
+  const validUser = Schema.validate(userData, UserSchema);
+  console.log('Valid user:', validUser);
+} catch (error) {
+  console.error('Validation failed:', error.message);
+  // Returns detailed field-level error messages
+}
 ```
 
-## License
+#### `Schema.shift(source, targetSchema, overrides?)`
+
+Shifts between overlapping object structures by preserving overlapping fields and adding/removing others:
+
+```typescript
+// Source schema has: { name, email, age, extraField }
+const sourceData = {
+  name: 'John',
+  email: 'john@example.com',
+  age: 30,
+  extraField: 'will be removed'
+};
+
+// Target schema has: { name, email, isActive }
+const TargetSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  isActive: z.boolean().default(true)
+});
+
+// Shift preserves overlapping fields (name, email) 
+// and applies target schema (removes age/extraField, adds isActive)
+const result = Schema.shift(sourceData, TargetSchema);
+// Result: { name: 'John', email: 'john@example.com', isActive: true }
+
+// Add overrides for missing or replacement fields
+const withOverrides = Schema.shift(sourceData, TargetSchema, {
+  isActive: false
+});
+// Result: { name: 'John', email: 'john@example.com', isActive: false }
+```
+
+Perfect for transforming between API schemas that share common fields but have different required/optional properties.
+
+#### `Schema.extract(object, path, schema, options?)`
+
+Extracts data from nested structures with sophisticated path support. Excellent for extracting config from a larger
+structure, or nested params, etc.
+
+```typescript
+// With defaults and overrides
+const mainDatabaseConfig = Schema.extract(config, 'database.main', DatabaseSchema, {
+  defaults: { host: 'localhost', port: 5432 },
+  overrides: { ssl: true },
+});
+```
+
+#### `Schema.clone(data)`
+
+Creates deep, immutable clones of JSON-compatible data, preserving type.
+
+```typescript
+const original = { user: { name: 'John', tags: ['admin', 'user'] } };
+const copy = Schema.clone(original);
+
+copy.user.name = 'Jane';
+copy.user.tags.push('editor');
+
+console.log(original.user.name); // Still 'John'
+console.log(original.user.tags); // Still ['admin', 'user']
+```
+
+### 🔄 Mapping Module
+
+Creates powerful bidirectional transformations between different data structures.
+
+#### `Mapping.compilePlan(config)`
+
+Compiles a reusable mapping plan:
+
+```typescript
+import { Mapping } from 'schemary';
+
+const plan = Mapping.compilePlan({
+  leftSchema: SourceSchema,
+  rightSchema: TargetSchema,
+  rules: [
+    // Simple field mapping
+    { left: 'user.firstName', right: 'person.givenName' },
+
+    // Array element access
+    { left: 'addresses[0].street', right: 'primaryAddress' },
+
+    // Literal values
+    { literal: 'v2.0', right: 'apiVersion' },
+
+    // Transform functions
+    {
+      left: 'user.active',
+      right: 'person.isActive',
+      transform: {
+        toRight: (active: number): boolean => active === 1,
+        toLeft: (isActive: boolean): number => isActive ? 1 : 0,
+      },
+    },
+
+    // Timestamp formatting using predefined formats or you can pass any Valid Luxon format token: https://moment.github.io/luxon/#/formatting?id=table-of-tokens
+    {
+      left: 'createdAt',
+      right: 'created',
+      format: {
+        type: Mapping.FormatType.TIMESTAMP,
+        toLeft: Mapping.Formatting.TimeStamp.ISO8601, // '2025-01-15T14:30:45.078Z'
+        toRight: Mapping.Formatting.TimeStamp.HTTP, // 'Wed, 15 Jan 2025 14:30:45 GMT'
+      },
+    },
+  ],
+
+  // Rule execution order (default: ASC)
+  order: {
+    toLeft: Mapping.PlanRuleOrder.DESC,
+    toRight: Mapping.PlanRuleOrder.ASC,
+  },
+});
+
+// Execute transformations
+const targetData = plan.map(sourceData);
+const backToSource = plan.reverseMap(targetData, {
+  // Override specific fields
+  user: { status: 'active' },
+});
+```
+
+## 🗺️ Advanced Path Navigation
+
+Schemary supports sophisticated path expressions for accessing nested data:
+
+### Basic Object Navigation
+
+```typescript
+'user.profile.settings.theme'
+'company.employees.benefits'
+```
+
+### Array Access
+
+```typescript
+'users[0]'              // First element
+'users[-1]'             // Last element  
+'users[2].name'         // Third user's name
+'matrix[1][0]'          // Multi-dimensional arrays
+```
+
+### Array Slicing
+
+[[x,y]] where X is the start index and y is the size
+
+```typescript
+'users[[0]]';            // From start (all elements)
+'users[[2]]';            // From index 2 to end
+'users[[1,3]]';          // Elements 1, 2 and 3 (size 3)
+'users[[-2]]';           // Last 2 elements
+'users[[-2,-2]]';         // last two items, in reverse order
+'users[[-2]]';         // last two items, in forward order
+```
+
+### Complex Nested Operations
+
+```typescript
+// Transform first 3 users, taking only their most recent order
+'users[[0,3]].orders[-1]';
+
+// Extract items from the first order of each user
+'users[[0]].orders[0].items';
+
+// Top item, from most recent 3 orders from top 3 users   
+'users[[0,3]].orders[[-3,3]].items[[0,1]]';
+
+// Field selection from objects
+'users[0].{id,name,email}';
+```
+
+### Escaped Field Names
+
+```typescript
+'data.\\[field\\.with\\.dots\\]'     // Field named "[field.with.dots]"
+'object.\\[special\\]\\.property'    // Field named "[special].property"
+```
+
+## 🔧 Advanced Features
+
+### Union Type Support
+
+```typescript
+// Discriminated unions
+const UserTypeSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('admin'), permissions: z.array(z.string()) }),
+  z.object({ type: z.literal('user'), tier: z.string() })
+]);
+
+const user = Schema.validate(data, UserTypeSchema);
+const shifted = Schema.shift(user, TargetSchema);
+
+// Regular unions
+const FlexibleSchema = z.union([StringSchema, NumberSchema, ObjectSchema]);
+```
+
+### Recursive/Lazy Schemas
+
+```typescript
+type TreeNode = {
+  value: string;
+  children?: TreeNode[];
+};
+
+const TreeSchema: z.ZodType<TreeNode> = z.lazy(() =>
+  z.object({
+    value: z.string(),
+    children: z.array(TreeSchema).optional()
+  })
+);
+
+const tree = Schema.validate(treeData, TreeSchema);
+const extracted = Schema.extract(tree, 'children[0].children[1].value', z.string());
+```
+
+### Complex Mapping Scenarios
+
+```typescript
+const complexPlan = Mapping.compilePlan({
+  leftSchema: OrdersSchema,
+  rightSchema: ReportSchema,
+  rules: [
+    // Map all users but only their last 3 orders  
+    {
+      left: 'customers[[0]].orders[[-3]]',
+      right: 'recentActivity',
+    },
+
+    // Transform arrays with custom functions
+    {
+      left: 'items',
+      right: 'productSummary',
+      transform: {
+        toRight: (items: Item[]) => items.map(item => ({
+          id: item.id,
+          revenue: item.price * item.quantity,
+        })),
+        toLeft: (summary: ProductSummary[]) =>
+          summary.map(s => ({ id: s.id, price: summary.revenue, quantity: 1 })),
+      },
+    },
+
+    // Multiple timestamp formats
+    {
+      left: 'orderDate',
+      right: 'created',
+      format: {
+        type: Mapping.FormatType.TIMESTAMP,
+        toLeft: 'yyyy-MM-dd HH:mm:ss',
+        toRight: Mapping.Formatting.TimeStamp.RFC2822,
+      },
+    },
+  ],
+});
+```
+
+### Error Handling
+
+Schemary provides detailed, actionable error messages:
+
+```typescript
+try {
+  const result = Schema.validate(data, schema);
+} catch (error) {
+  console.error('Validation errors:', error.message);
+  // Example output:
+  // "error in request params: user.email Expected string, received number, 
+  //  user.age Expected number greater than 0, received -5"
+}
+
+try {
+  const extracted = Schema.extract(data, 'invalid[path', schema);
+} catch (error) {
+  console.error('Path error:', error.message);
+  // "Parse error at position 12: Expected closing bracket ']', got end of input"
+}
+```
+
+## 🎯 Use Cases
+
+### API Request/Response Transformation
+
+```typescript
+// Transform API responses to internal models
+const plan = Mapping.compilePlan({
+  leftSchema: APIResponseSchema,
+  rightSchema: InternalModelSchema,
+  rules: [
+    { left: 'data.user_info.full_name', right: 'user.name' },
+    { left: 'data.user_info.email_address', right: 'user.email' },
+    {
+      left: 'meta.created_timestamp', right: 'createdAt',
+      format: {
+        type: Mapping.FormatType.TIMESTAMP,
+        toLeft: Mapping.Formatting.TimeStamp.UNIX,
+        toRight: Mapping.Formatting.TimeStamp.ISO8601
+      }
+    }
+  ]
+});
+```
+
+### Configuration Management
+
+```typescript
+// Extract environment-specific configuration
+const dbConfig = Schema.extract(config, 'environments.production.database', DatabaseSchema, {
+  defaults: {
+    host: 'localhost',
+    port: 5432,
+    ssl: false
+  },
+  overrides: {
+    ssl: process.env.NODE_ENV === 'production'
+  }
+});
+```
+
+### Data Migration
+
+```typescript
+// Transform legacy data structures
+const migrationPlan = Mapping.compilePlan({
+  leftSchema: LegacySchema,
+  rightSchema: NewSchema,
+  rules: [
+    { left: 'old_field_name', right: 'newFieldName' },
+    { left: 'nested.deep.value', right: 'flatValue' },
+    { literal: true, right: 'migrated' }
+  ]
+});
+
+const migratedData = migrationPlan.map(legacyData);
+```
+
+## 🔗 Ecosystem
+
+- **[Zod](https://zod.dev/)**: Runtime schema validation (peer dependency)
+- **[Luxon](https://moment.github.io/luxon/)**: Timestamp processing and formatting
+
+## 📄 License
 
 MIT
+
+## 🤝 Contributing
+
+Contributions welcome! Please read our contributing guidelines and code of conduct.
+
+---
+
+**Schemary v1.0** - From simple validation to complex bidirectional transformations. Built for modern TypeScript
+applications.

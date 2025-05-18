@@ -17,7 +17,7 @@ import {
   ZodUnionSchemaDef,
   ZodDiscriminatedUnionDef,
   InputObjectSchema,
-  Overrides,
+  NoInferPartial,
   ZodLazyObjectSchemaDefPart,
 } from './types.js';
 
@@ -225,7 +225,7 @@ export function _shift<
 >(
   sourceObj: JSONObject,
   targetSchema: TargetSchema,
-  targetOverrides: Overrides<TargetType> = {},
+  targetOverrides: NoInferPartial<TargetType> = {},
 ): TargetType {
   // We just blindly mixin the overrides as the specific fields and values in
   // the resulting object are often part of the target schema selection, such as

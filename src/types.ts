@@ -73,7 +73,7 @@ export type JSONAny = z.infer<typeof JSONAnySchema>;
 // allows dynamic partials for defaults and overrides
 export type NoInfer<T> = [T][T extends any ? 0 : never];
 
-export type Overrides<T> = Partial<NoInfer<T>> | NoInfer<T>;
+export type NoInferPartial<T> = Partial<NoInfer<T>> | NoInfer<T>;
 
 /**
  * Represents a Zod schema for a single object, including lazy schemas.

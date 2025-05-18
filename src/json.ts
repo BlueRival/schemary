@@ -1,6 +1,10 @@
 import { JSONObject, JSONObjectArray } from './types.js';
 
-import { InputObjectSchema, InputArraySchema, Overrides } from './types.js';
+import {
+  InputObjectSchema,
+  InputArraySchema,
+  NoInferPartial,
+} from './types.js';
 import { z } from 'zod';
 import { _isZodArray } from './helpers.js';
 import { shift } from './schema.js';
@@ -32,7 +36,9 @@ export function parse<
 >(
   input: string,
   targetSchema: TargetSchema,
-  targetOverrides: Overrides<TargetType> | Overrides<ArrayTargetType> = {},
+  targetOverrides:
+    | NoInferPartial<TargetType>
+    | NoInferPartial<ArrayTargetType> = {},
 ): z.infer<TargetSchema> {
   // Parse the JSON string. We don't know the type, but that is OK
   // because convert will type-check it.
@@ -43,13 +49,13 @@ export function parse<
     return shift(
       parsedJson,
       targetSchema as InputArraySchema<ArrayTargetType>,
-      targetOverrides as Overrides<ArrayTargetType>,
+      targetOverrides as NoInferPartial<ArrayTargetType>,
     ) as ArrayTargetType[];
   } else {
     return shift(
       parsedJson,
       targetSchema as InputObjectSchema<TargetType>,
-      targetOverrides as Overrides<TargetType>,
+      targetOverrides as NoInferPartial<TargetType>,
     ) as TargetType;
   }
 }

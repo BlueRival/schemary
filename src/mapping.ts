@@ -15,9 +15,20 @@ import {
 import { map as mapCore, MAP_DIRECTION } from './mapping/execute.js';
 
 import { JSONType } from './types.js';
-import { InputArraySchema, InputObjectSchema, Overrides } from './types.js';
+import {
+  InputArraySchema,
+  InputObjectSchema,
+  NoInferPartial,
+} from './types.js';
+import { FormatShortNames } from './formatters/timestamp.js';
 
 type MappingSchema<T> = InputObjectSchema<T> | InputArraySchema<T>;
+
+export { MappingRuleFormatType as FormatType } from './mapping/plan.js';
+
+export const Formatting = {
+  TimeStamp: FormatShortNames,
+};
 
 export interface PlanParams<L extends JSONType, R extends JSONType>
   extends MappingPlanParamsCore {
@@ -42,14 +53,14 @@ export class Plan<
 
   public map(
     leftValue: z.infer<typeof this.leftSchema>,
-    overrideValues?: Overrides<z.infer<typeof this.rightSchema>>,
+    overrideValues?: NoInferPartial<z.infer<typeof this.rightSchema>>,
   ): z.infer<typeof this.rightSchema> {
     leftValue = this.leftSchema.parse(leftValue);
 
     const rightValue = mapCore(
       leftValue,
       this.core,
-      overrideValues as Overrides<JSONType> | undefined, // mapCore just wants a JSONType, it doesn't care about schemas
+      overrideValues as NoInferPartial<JSONType> | undefined, // mapCore just wants a JSONType, it doesn't care about schemas
       MAP_DIRECTION.LeftToRight,
     );
 
@@ -58,14 +69,14 @@ export class Plan<
 
   public reverseMap(
     rightValue: z.infer<typeof this.rightSchema>,
-    overrideValues?: Overrides<z.infer<typeof this.leftSchema>>,
+    overrideValues?: NoInferPartial<z.infer<typeof this.leftSchema>>,
   ): z.infer<typeof this.leftSchema> {
     rightValue = this.rightSchema.parse(rightValue);
 
     const leftValue = mapCore(
       rightValue,
       this.core,
-      overrideValues as Overrides<JSONType> | undefined, // mapCore just wants a JSONType, it doesn't care about schemas
+      overrideValues as NoInferPartial<JSONType> | undefined, // mapCore just wants a JSONType, it doesn't care about schemas
       MAP_DIRECTION.RightToLeft,
     );
 

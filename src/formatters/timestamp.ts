@@ -67,7 +67,7 @@ function getRandomDateFormats(): string[] {
 }
 
 /** Top‐level: day prefix + (date + time + timezone), then sort */
-export function getRandomTimeFormats(): string[] {
+function getRandomTimeFormats(): string[] {
   const deduplicationSet = new Set<string>();
   let dateTimes = getRandomDateFormats();
 

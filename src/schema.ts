@@ -13,10 +13,12 @@ import {
   _isPrimitive,
   _isZodArray,
 } from './helpers.js';
-import { InputObjectSchema, InputArraySchema, Overrides } from './types.js';
+import {
+  InputObjectSchema,
+  InputArraySchema,
+  NoInferPartial,
+} from './types.js';
 import { z } from 'zod';
-
-export * as Mapping from './mapping.js';
 
 /**
  * Shifts fields from a source object OR an array of source objects to the
@@ -46,7 +48,7 @@ export function shift<
 >(
   source: JSONObject | JSONObjectArray,
   targetSchema: TargetSchema,
-  overrides: Overrides<TargetType> | Overrides<ArrayTargetType> = {},
+  overrides: NoInferPartial<TargetType> | NoInferPartial<ArrayTargetType> = {},
 ): z.infer<TargetSchema> {
   if (_isPrimitive(source)) {
     throw new Error('source must be an object or array of objects');
@@ -66,7 +68,11 @@ export function shift<
       scopedSchema.element;
 
     const result: ArrayTargetType[] = source.map((sourceObj) =>
-      _shift(sourceObj, elementSchema, overrides as Overrides<ArrayTargetType>),
+      _shift(
+        sourceObj,
+        elementSchema,
+        overrides as NoInferPartial<ArrayTargetType>,
+      ),
     );
 
     return scopedSchema.parse(result) as ArrayTargetType[];
@@ -81,7 +87,7 @@ export function shift<
   // we know this assertion is correct because of _isZodArray()
   const scopedSchema = targetSchema as InputObjectSchema<TargetType>;
 
-  return _shift(source, scopedSchema, overrides as Overrides<TargetType>);
+  return _shift(source, scopedSchema, overrides as NoInferPartial<TargetType>);
 }
 
 /**
@@ -181,8 +187,8 @@ export function extract<T>(
   path: string | string[],
   schema: z.ZodType<T>,
   options?: {
-    defaults?: Overrides<T>;
-    overrides?: Overrides<T>;
+    defaults?: NoInferPartial<T>;
+    overrides?: NoInferPartial<T>;
   },
 ): T {
   // Convert the path to an array of keys if it's a string
