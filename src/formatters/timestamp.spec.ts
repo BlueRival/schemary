@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { format } from './timestamp.js';
-import { DateTime } from 'luxon';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const only = true;

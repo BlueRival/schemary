@@ -18,9 +18,9 @@ describe('index.ts', () => {
   });
 
   it('should export Mapping module', () => {
-    expect(Index.Mapping).toBeDefined();
+    expect(Index.Schema.Mapping).toBeDefined();
     // Verify that it's the same module we're importing directly
-    expect(Index.Mapping).toEqual(Mapping);
+    expect(Index.Schema.Mapping).toEqual(Mapping);
   });
 
   // Note: We don't test for specific types from the Types module
@@ -44,11 +44,11 @@ describe('index.ts', () => {
 
   it('should export specific functions and classes from Mapping module', () => {
     // Check the main mapping exports
-    expect(Index.Mapping.PlanRuleOrder).toBeDefined();
-    expect(Index.Mapping.Plan).toBeDefined();
-    expect(typeof Index.Mapping.Plan).toBe('function');
+    expect(Index.Schema.Mapping.PlanRuleOrder).toBeDefined();
+    expect(Index.Schema.Mapping.Plan).toBeDefined();
+    expect(typeof Index.Schema.Mapping.Plan).toBe('function');
 
-    expect(Index.Mapping.compilePlan).toBeDefined();
-    expect(typeof Index.Mapping.compilePlan).toBe('function');
+    expect(Index.Schema.Mapping.compilePlan).toBeDefined();
+    expect(typeof Index.Schema.Mapping.compilePlan).toBe('function');
   });
 });

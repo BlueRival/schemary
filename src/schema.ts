@@ -16,6 +16,8 @@ import {
 import { InputObjectSchema, InputArraySchema, Overrides } from './types.js';
 import { z } from 'zod';
 
+export * as Mapping from './mapping.js';
+
 /**
  * Shifts fields from a source object OR an array of source objects to the
  * target type(s) using Zod schema validation.

@@ -6,7 +6,6 @@ import {
 import { JSONType } from '../types.js';
 import { format as TimestampFormatter } from '../formatters/timestamp.js';
 import { extractValue, injectValue } from './parser/utilities.js';
-import { PathSegment } from './parser/ast/types.js';
 
 export enum MAP_DIRECTION {
   LeftToRight = 0,

@@ -17,9 +17,11 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
     "test": "TARGET_TESTS=all vitest run --coverage",
     "test:watch": "TARGET_TESTS=unit vitest watch",
     "test:unit": "TARGET_TESTS=unit vitest run"
@@ -35,6 +37,14 @@
   ],
   "author": "BlueRival",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BlueRival/schemary.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BlueRival/schemary/issues"
+  },
+  "homepage": "https://github.com/BlueRival/schemary#readme",
   "dependencies": {
     "luxon": "^3.6.1"
   },
