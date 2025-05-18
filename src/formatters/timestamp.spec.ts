@@ -365,11 +365,6 @@ const testDates: TestDatesTests[] = [
       ZZ: '+00:00',
       Z: '+0',
       z: 'UTC',
-      yyyy: DateTime.now().toFormat('yyyy'),
-      M: DateTime.now().toFormat('M'),
-      MM: DateTime.now().toFormat('MM'),
-      d: DateTime.now().toFormat('d'),
-      dd: DateTime.now().toFormat('dd'),
       H: '14',
       HH: '14',
       mm: '30',
@@ -388,11 +383,6 @@ const testDates: TestDatesTests[] = [
       ZZ: '+00:00',
       Z: '+0',
       z: 'UTC',
-      yyyy: DateTime.now().toFormat('yyyy'),
-      M: DateTime.now().toFormat('M'),
-      MM: DateTime.now().toFormat('MM'),
-      d: DateTime.now().toFormat('d'),
-      dd: DateTime.now().toFormat('dd'),
       H: '14',
       HH: '14',
       mm: '30',
@@ -496,11 +486,7 @@ describe('formatDate', () => {
           }
         } else {
           partsExpect[formatToken] = expected;
-          partsMatch[formatToken] = format(
-            input,
-            formatToken,
-            formatHint,
-          );
+          partsMatch[formatToken] = format(input, formatToken, formatHint);
         }
       }
 

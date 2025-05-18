@@ -416,6 +416,14 @@ describe('ArraySegment', () => {
       const result = segment.setValue(destination, value);
       expect(result).toStrictEqual([10, 100, 30, 40, 50]);
     });
+
+    it('should set undefined value', () => {
+      const segment = new ArrayIteratorSegment('[[1,2]]', 1, 2);
+      const destination = [10, 20, 30, 40, 50];
+
+      const result = segment.setValue(destination, undefined);
+      expect(result).toStrictEqual(destination);
+    });
   });
 
   describe('Static methods', () => {

@@ -72,7 +72,7 @@ export class ArrayIteratorSegment extends AbstractPathIteratorSegment {
       source = [];
     }
 
-    this._getIterate(source, (item) => result.push(item ? clone(item) : item));
+    this._getIterate(source, (item) => result.push(clone(item)));
 
     return { result, chain: true };
   }

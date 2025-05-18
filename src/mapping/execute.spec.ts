@@ -1365,6 +1365,35 @@ describe('JSON Schema Mapping', () => {
     },
   ]);
 
+  // Tests for error thrown when applying formatting to non-string values
+  describe('formatting error handling', () => {
+    it('should throw error when applying format to object value', () => {
+      const rules = [
+        {
+          left: 'data.objectValue',
+          right: 'formattedValue',
+          format: {
+            type: MappingRuleFormatType.TIMESTAMP,
+            left: TimestampFormats.ISO8601,
+            right: TimestampFormats.HTTP,
+          },
+        },
+      ];
+
+      const source = {
+        data: {
+          objectValue: { key: 'value' },
+        },
+      };
+
+      const plan = compile(rules);
+
+      expect(() => {
+        map(source, plan);
+      }).toThrow('Can not apply timestamp formatting to non-string value');
+    });
+  });
+
   generateTests('overrideValues in mapping', [
     {
       name: 'should override mapped values with overrideValues (left-to-right)',
