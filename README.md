@@ -1,5 +1,8 @@
 # Schemary
 
+[![CI](https://github.com/BlueRival/schemary/workflows/CI/badge.svg)](https://github.com/BlueRival/schemary/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/BlueRival/schemary/graph/badge.svg)](https://codecov.io/gh/BlueRival/schemary)
+
 A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript.
 
 ## Major Release: v1.0
