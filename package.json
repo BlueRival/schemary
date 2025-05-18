@@ -1,6 +1,6 @@
 {
   "name": "schemary",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A schema validation and mapping utility library",
   "type": "module",
   "main": "dist/index.js",

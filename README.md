@@ -1,7 +1,6 @@
 # Schemary
 
-**A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript
-**
+A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript.
 
 ## Major Release: v1.0
 
@@ -129,12 +128,13 @@ const ParamsSchema = z.object({
 
 @POST()
 async function userUpdate(@Body() postBody: string): void {
-  const userValidated = Schema.jsonParse(postBody, UserSchema);
+  const userValidated = JSON.parse(postBody, UserSchema);
 }
 
 @GET()
 async function userGet(@Params params: Types.JSON): User {
   const requestParams = Schema.validate(params, ParamsSchema);
+
   const user = await userModel.get(requestParams.id);
 
   // Pretty format output and validate schema at same time
@@ -653,9 +653,156 @@ MIT
 
 ## Contributing
 
-Contributions welcome! Please read our contributing guidelines and code of conduct.
+We welcome contributions! Schemary is open source and benefits from community involvement.
 
----
+### Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/schemary.git
+   cd schemary
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Set up your development environment**:
+    - Node.js 22.14.0 or higher required
+    - This project uses ESM modules exclusively
+    - TypeScript with strict mode enabled
+
+### Development Workflow
+
+**Available Scripts:**
+
+```bash
+npm run build    # Compile TypeScript to dist/
+npm run test     # Run all tests with coverage
+npm run lint     # Run ESLint
+npm run format   # Format code with Prettier
+npm run clean    # Remove dist/ directory
+```
+
+**Before submitting:**
+
+```bash
+npm run lint && npm run test && npm run build
+```
+
+This is also run automatically by the `prepublishOnly` script.
+
+### Code Standards
+
+**Coding Priorities (in order of precedence):**
+
+1. **Clarity and Minimal Complexity**
+    - Code should be self-explanatory without comments
+    - Comments, if used, explain WHY, never WHAT
+    - Any function should be understandable within 30-60 seconds
+    - Functions should not exceed screen height
+    - Avoid nested object/array destructuring (especially without runtime type checking)
+    - Each statement should do no more than 1-2 things plus assignment/return
+    - No "hipster" shortcuts that sacrifice clarity for brevity
+    - Break code into clean, focused functions
+    - Consideration for run-time complexity (CPU and memory) is more important than code style, but not by much.
+
+2. **SOLID Principles**
+
+3. **Clean Code by Robert C. Martin** (excluding DRY, see #5)
+    - Meaningful names
+    - Small functions
+    - Clear structure
+    - Minimal side effects
+
+4. **Functional Programming**
+    - Prefer immutable operations
+    - Use pure functions where possible
+    - Avoid mutations
+    - Except: Don't blindly prioritize recursion over loops. Use recursion when it makes logic simpler. Use loops when
+      the iteration count is unbound/unknown or it makes logic simpler.
+
+5. **DRY Principles** (Don't Repeat Yourself)
+    - As long as it doesn't conflict with any of the above principles. Simple, but repeated code is better than overly
+      complex, DRY code.
+    - Eliminate code duplication
+    - Extract common patterns
+    - Create reusable abstractions
+
+**Technical Requirements:**
+
+- **TypeScript**: All code must be strongly typed
+- **ESLint**: Follow the project's ESLint configuration
+- **Prettier**: Code formatting is enforced
+- **Tests**: Maintain or improve test coverage
+- **Immutability**: All operations should be immutable
+- **Documentation**: Update README for new features
+
+### Testing Philosophy
+
+Schemary uses a layered testing approach:
+
+- **Unit tests**: Test individual functions and classes
+- **Integration tests**: Test module interactions, and assembly of lower-level functionality, not the lower level
+  functionality itself.
+
+### Submitting Changes
+
+1. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Write tests first** for new functionality
+
+3. **Implement your changes** following the existing patterns
+
+4. **Update documentation** if needed
+
+5. **Commit with descriptive messages**:
+   ```bash
+   git commit -m "feat: add advanced array slicing support"
+   ```
+
+6. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+7. **Create a Pull Request** on GitHub
+
+### Pull Request Guidelines
+
+- **Clear title and description**
+- **Reference related issues** if applicable
+- **Include tests** for new functionality
+- **Update documentation** as needed
+- **Ensure CI passes** (tests, linting, build)
+
+### Reporting Issues
+
+When reporting bugs or requesting features:
+
+- Check existing issues first
+- Use the GitHub issue templates
+- Provide minimal reproduction examples
+- Provide expected results
+- Provide actual results
+- Include relevant environment details
+
+### Community
+
+- **Be respectful** you can disagree, but keep the hits above the belt.
+- **Help others** learn and contribute
+- **Follow our code of conduct**
+
+Thank you for contributing to Schemary! 🚀
+
+# Important Releases
+
+**Schemary v1.0.1** - Documentation update.
 
 **Schemary v1.0** - From simple validation to complex bidirectional transformations. Built for modern TypeScript
 applications.
