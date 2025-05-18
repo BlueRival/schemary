@@ -31,17 +31,13 @@ describe('ObjectFieldSegment', () => {
       const fieldName = params.fieldName;
       const expected = params.expected;
 
-      if (params.only) {
-        it.only(testName, () => {});
-      } else if (params.skip) {
-        it.skip(testName, () => {});
-      } else {
-        it(testName, () => {
-          const segment = new ObjectIndexSegment(fieldName, fieldName);
-          const result = segment.getValue(source);
-          expect(result).toStrictEqual(expected);
-        });
-      }
+      const myIt = params.only === true ? it.only : params.skip ? it.skip : it;
+
+      myIt(testName, () => {
+        const segment = new ObjectIndexSegment(fieldName, fieldName);
+        const result = segment.getValue(source);
+        expect(result).toStrictEqual(expected);
+      });
     };
 
     // Test object
