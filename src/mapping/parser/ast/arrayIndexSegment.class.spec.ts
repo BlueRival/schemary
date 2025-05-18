@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ArrayIndexSegmentClass } from './arrayIndexSegment.class.js';
-import { JSONArray, JSONType } from '../../../types.js';
-import { extractValue, injectValue } from '../utilities.js';
+import { JSONArray } from '../../../types.js';
 
 describe('ArrayIndexSegment', () => {
   describe('Construction', () => {
@@ -38,75 +37,73 @@ describe('ArrayIndexSegment', () => {
 
     it('should get value with positive index in middle', () => {
       const segment = new ArrayIndexSegmentClass('[2]', 2);
-      const result = extractValue(array, [segment]);
+      const { result } = segment.getValue(array);
       expect(result).toStrictEqual('c');
     });
 
     it('should get value with positive index at end', () => {
       const segment = new ArrayIndexSegmentClass('[4]', 4);
-      const result = extractValue(array, [segment]);
+      const { result } = segment.getValue(array);
       expect(result).toStrictEqual('e');
     });
 
     it('should get undefined for out of bounds positive index', () => {
       const segment = new ArrayIndexSegmentClass('[5]', 5);
-      const result = extractValue(array, [segment]);
+      const { result } = segment.getValue(array);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should get value with negative index from end', () => {
       const segment = new ArrayIndexSegmentClass('[-1]', -1);
-      const result = extractValue(array, [segment]);
+      const { result } = segment.getValue(array);
       expect(result).toStrictEqual('e');
     });
 
     it('should get value with negative index from middle', () => {
       const segment = new ArrayIndexSegmentClass('[-3]', -3);
-      const result = extractValue(array, [segment]);
+      const { result } = segment.getValue(array);
       expect(result).toStrictEqual('c');
     });
 
     it('should throw error for out of bounds negative index', () => {
       const segment = new ArrayIndexSegmentClass('[-6]', -6);
-      expect(() => extractValue(array, [segment])).toThrow();
+      expect(() => segment.getValue(array)).toThrow();
     });
 
     // Test cases for non-array source
     it('should return undefined for non-array source (object)', () => {
       const segment = new ArrayIndexSegmentClass('[0]', 0);
-      const result = extractValue({} as JSONType, [segment]);
+      const { result } = segment.getValue({} as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should return undefined for non-array source (string)', () => {
       const segment = new ArrayIndexSegmentClass('[0]', 0);
-      const result = extractValue('abc' as unknown as JSONType, [segment]);
+      const { result } = segment.getValue('abc' as unknown as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should return undefined for non-array source (number)', () => {
       const segment = new ArrayIndexSegmentClass('[0]', 0);
-      const result = extractValue(123 as unknown as JSONType, [segment]);
+      const { result } = segment.getValue(123 as unknown as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should return undefined for non-array source (null)', () => {
       const segment = new ArrayIndexSegmentClass('[0]', 0);
-      const result = extractValue(null as unknown as JSONType, [segment]);
+      const { result } = segment.getValue(null as unknown as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should return undefined for non-array source (undefined)', () => {
       const segment = new ArrayIndexSegmentClass('[0]', 0);
-      const result = extractValue(undefined as unknown as JSONType, [segment]);
+      const { result } = segment.getValue(undefined as unknown as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
 
     it('should get undefined with non-array source', () => {
       const segment = new ArrayIndexSegmentClass('[2]', 2);
-      const result = extractValue('non-array' as unknown as JSONType, [
-        segment,
-      ]);
+      const { result } = segment.getValue('non-array' as unknown as JSONArray);
       expect(result).toStrictEqual(undefined);
     });
   });
@@ -117,7 +114,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = injectValue(destination, value, [segment]);
+      const result = segment.setValue(destination, value);
       expect(result).toStrictEqual(['a', 'x', 'c']);
     });
 
@@ -126,7 +123,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = injectValue(destination, value, [segment]);
+      const result = segment.setValue(destination, value);
       expect(result).toStrictEqual(['a', 'b', 'x']);
     });
 
@@ -134,7 +131,7 @@ describe('ArrayIndexSegment', () => {
       const segment = new ArrayIndexSegmentClass('[1]', 1);
       const value = 'x';
 
-      const result = injectValue(undefined, value, [segment]);
+      const result = segment.setValue(undefined, value);
       // Should create [undefined, 'x']
       expect(Array.isArray(result)).toBe(true);
       expect((result as any[]).length).toBe(2);
@@ -167,7 +164,7 @@ describe('ArrayIndexSegment', () => {
       const destination = ['a', 'b', 'c'];
       const value = 'x';
 
-      const result = injectValue(destination, value, [segment]);
+      const result = segment.setValue(destination, value);
       expect(Array.isArray(result)).toBe(true);
       expect((result as any[]).length).toBe(6);
       expect((result as any[])[5]).toBe('x');
