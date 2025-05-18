@@ -1,16 +1,9 @@
-# Compiled source #
-###################
-*.com
-*.class
-*.dll
-*.exe
-*.o
-*.so
+# compiled output
+/dist
+/node_modules
+/build
 
-# Packages #
-############
-# it's better to unpack these files and commit the raw source
-# git has its own built in compression methods
+# packages
 *.7z
 *.dmg
 *.gz
@@ -19,24 +12,53 @@
 *.rar
 *.tar
 *.zip
+.pnpm-store
 
-# Logs and databases #
-######################
+# Logs
+logs
 *.log
-*.sql
-*.sqlite
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# OS generated files #
-######################
+# OS
 .DS_Store*
 ehthumbs.db
 Icon?
 Thumbs.db
 
-# Specific #
-#####################
-oauth.config
-node_modules
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
 .idea
 *.iml
-etc
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode
+.vscode/*
+
+# dotenv environment variable files
+.env
+.env.test
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

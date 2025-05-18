@@ -1,0 +1,30 @@
+# Source files
+src/
+test/
+
+# Config files
+tsconfig*.json
+eslint.config.mjs
+.prettierrc
+vitest.config.ts
+
+# Build artifacts
+coverage/
+node_modules/
+
+# Development files
+.idea/
+.vscode/
+*.log
+*.tgz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# CI/Testing
+.github/

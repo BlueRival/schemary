@@ -1,0 +1,15 @@
+export {
+  Primitive,
+  JSONType as JSON,
+  JSONSchema as Schema,
+  JSONObject as Object,
+  JSONObjectSchema as ObjectSchema,
+  JSONArray as Array,
+  JSONArraySchema as ArraySchema,
+  JSONObjectArray as ArrayOfObjects,
+  JSONObjectArraySchema as ArrayOfObjectSchema,
+  JSONAny as Any,
+  JSONAnySchema as AnySchema,
+  NoInferPartial as Partial,
+  NoInfer,
+} from './types.js';
