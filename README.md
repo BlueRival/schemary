@@ -3,45 +3,45 @@
 **A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript
 **
 
-## 🚀 Major Release: v1.0
+## Major Release: v1.0
 
 Schemary has been completely rewritten from the ground up! After over 10 years as a pre-v1 library, **version 1.0**
-represents a total overhaul with dramatically expanded capabilities. This is not an incremental update—it's a entirely
+represents a total overhaul with dramatically expanded capabilities. This is not an incremental update—it's an entirely
 new, far more powerful library.
 
-## ✨ What Makes Schemary Special
+## What Makes Schemary Special
 
-- **🔄 Bidirectional Mapping**: Transform data structures in both directions with a single configuration
-- **🗺️ Advanced Path Navigation**: Powerful syntax for array slicing, negative indexing, and nested field access
-- **🛡️ Type Safety**: Full TypeScript support with runtime validation via Zod schemas
-- **🔀 Schema Transformation**: Shift data between different object shapes while preserving encoding
-- **💎 Immutable Operations**: All operations return new data without side effects
-- **⚡ High Performance**: Compiled mapping plans for efficient repeated transformations
+- **Bidirectional Mapping**: Transform data structures in both directions with a single configuration
+- **Advanced Path Navigation**: Powerful syntax for array slicing, negative indexing, and nested field access
+- **Type Safety**: Full TypeScript support with runtime validation via Zod schemas
+- **Schema Transformation**: Shift data between different object shapes while preserving encoding
+- **Immutable Operations**: All operations return new data without side effects
+- **High Performance**: Compiled mapping plans for efficient repeated transformations
 
-## 📦 Installation
+## Installation
 
 ```bash
-npm install schemary
+npm install schemary --save
 ```
 
-Optional, if you will be using any Zod schema transformations:
+Optional, if you will be using any Zod schema transformations, v3 recommended:
 
 ```bash
 npm install zod@3 --save
 ```
 
-Optional, if you will be using any TimeStamp transformations in Mappings:
+Optional, if you will be using any timestamp transformations in mappings, v3 recommended:
 
 ```bash
 npm install luxon@3 --save
 ```
 
-**⚠️ ESM Only**: Schemary is an ESM-only package. Your project needs `"type": "module"` in `package.json` or use `.mjs`
+**ESM Only**: Schemary is an ESM-only package. Your project needs `"type": "module"` in `package.json` or use `.mjs`
 files.
 
-## 🚦 Quick Start
+## Quick Start
 
-1. Validate input data
+### 1. Validate input data
 
 ```typescript
 import { Schema } from 'schemary';
@@ -54,26 +54,25 @@ export const UserSchema = z.object({
   age: z.number(),
 });
 
-export type User = z.infer<typeof UserSchema>
+export type User = z.infer<typeof UserSchema>;
 
 function processUser(user: User): void {
   const userValidated = Schema.validate(user, UserSchema);
 }
 ```
 
-2. Extract nested data with defaults
+### 2. Extract nested data with defaults
 
 ```typescript
-import { Schema } from 'schemary';
+import { Schema, Types } from 'schemary';
 import { z } from 'zod';
 
 const NotificationsSchema = z.object({
   email: z.boolean(),
   sms: z.boolean(),
-})
-  .strict();
+}).strict();
 
-const data: Types.JSONType = {
+const data: Types.JSON = {
   firstName: 'Ricky',
   lastName: 'Bobby',
   email: 'rbobby@wonderbread.com',
@@ -92,9 +91,9 @@ const settings = Schema.extract(data, 'user.preferences.notifications', Notifica
 });
 
 enum DatabaseMode {
-  'READ' = 'read-only',
-  'WRITE' = 'write-only',
-  'DUPLEX' = 'duplex'
+  READ = 'read-only',
+  WRITE = 'write-only',
+  DUPLEX = 'duplex'
 }
 
 // Define schemas with defaults
@@ -103,18 +102,16 @@ const DatabaseConfigSchema = z.object({
   mode: z.nativeEnum(DatabaseMode).default(DatabaseMode.DUPLEX),
   port: z.number().min(1).default(3000),
   tls: z.boolean().default(true),
-})
-  .strict();
-
+}).strict();
 
 const mainDatabaseConfig = Schema.extract(config, 'databases.main', DatabaseConfigSchema);
 const metricsDatabaseConfig = Schema.extract(config, 'databases.metrics', DatabaseConfigSchema);
 ```
 
-3. Process JSON strings
+### 3. Process JSON strings
 
 ```typescript
-import { JSON, Types } from 'schemary';
+import { JSON, Schema, Types } from 'schemary';
 import { z } from 'zod';
 
 // Define schemas
@@ -124,75 +121,61 @@ const UserSchema = z.object({
   age: z.number(),
 });
 
-const User = z.infer<typeof UserSchema>;
+type User = z.infer<typeof UserSchema>;
 
 const ParamsSchema = z.object({
   id: z.string(),
 });
 
 @POST()
-async function userUpdate(
-  @Body()
-  postBody: string,
-): void {
+async function userUpdate(@Body() postBody: string): void {
   const userValidated = Schema.jsonParse(postBody, UserSchema);
 }
 
 @GET()
-async function userGet(
-  @Params
-  params: Types.JSONType,
-): User {
-
+async function userGet(@Params params: Types.JSON): User {
   const requestParams = Schema.validate(params, ParamsSchema);
-
   const user = await userModel.get(requestParams.id);
 
-  // pretty format output
+  // Pretty format output and validate schema at same time
   return JSON.stringify(user, UserSchema, null, 2);
-
 }
 ```
 
-4. Shift Schema to add/remove fields without full mapping definition of similar schemas
+### 4. Shift schema to add/remove fields without full mapping definition
 
 ```typescript
 import { Schema, Types } from 'schemary';
 import { z } from 'zod';
 
 enum EventType {
-  'USER_UPDATE' = 'user-update',
-  'INSURANCE_UPDATE' = 'insurance-update',
+  USER_UPDATE = 'user-update',
+  INSURANCE_UPDATE = 'insurance-update',
 }
 
 // Define schemas
 const EventSchema = z.object({
   type: z.nativeEnum(EventType),
-  data: Types.JSONSchema,
+  data: Types.Schema,
 });
 
 type Event = z.infer<typeof EventSchema>;
 
 const HandlerRequestSchema = z.object({
-  data: Types.JSONSchema,
+  data: Types.Schema,
 });
 
-async function router(event: Event): Types.JSON {
-
+async function router(event: Event): Promise<Types.JSON> {
   const handler = await broker.get(event.type);
-
   const request = Schema.shift(event, HandlerRequestSchema);
-
   return handler.request(request);
-
 }
-
 ```
 
-5. Create bidirectional mappings between dissimilar schemas
+### 5. Create bidirectional mappings between dissimilar schemas
 
 ```typescript
-import { Schema, Types, Mapping } from 'schemary';
+import { Schema, Mapping } from 'schemary';
 import { z } from 'zod';
 
 // Define schemas
@@ -225,38 +208,34 @@ const profile = plan.map(user);
 const backToUser = plan.reverseMap(profile);
 ```
 
-6. Create strongly-typed defaults and override parameters
+### 6. Create strongly-typed defaults and override parameters
 
 ```typescript
-import { Schema, Types } from 'schemary';
-import { z } from 'zod';
+import { Types } from 'schemary';
 
 class AbstractDatabaseStorage<T> {
-
   // When .save() is called with defaults, TypeScript won't infer the type of T from the 
   // defaults, which will likely be incomplete. It will infer it from record, which is correct.
-  public async save<T>(record: T, defaults?: Types.Partial<T>): string {
-
+  public async save<T>(record: T, defaults?: Types.Partial<T>): Promise<string> {
+    // Implementation here
   }
-
 }
+```
 
-````
+## Core Modules
 
-## 📚 Core Modules
-
-### 🏗️ Types Module
+### Types Module
 
 Export namespace for TypeScript types representing JSON data structures and utility types.
 
 These types are useful for creating abstract, generic libraries designed to handle arbitrary data without concern for
-specific underlying datastructures.
+specific underlying data structures.
 
 **Available Types:**
 
 - `Types.Primitive` - String, number, boolean, null, undefined
-- `Types.JSON` - Any valid JSON value or structure, recursively: object of fields, array or objects, array of
-  primitives, etc
+- `Types.JSON` - Any valid JSON value or structure, recursively: object of fields, array of objects, array of
+  primitives, etc.
 - `Types.Schema` - Zod schema for Types.JSON
 - `Types.Object` - JSON structure with Object root: { string: Types.JSON, ... }
 - `Types.ObjectSchema` - Zod schema for Types.Object
@@ -264,18 +243,17 @@ specific underlying datastructures.
 - `Types.ArraySchema` - Zod schema for Types.Array
 - `Types.ArrayOfObjects` - JSON structure: Types.Object[]
 - `Types.ArrayOfObjectSchema` - Zod schema for arrays of objects
-- `Types.Any` - Any JSON-compatible non-primitive root (object / array): Types.Object | Types.Array |
-  Types.ArrayOfObjects
+- `Types.Any` - Any JSON-compatible non-primitive root (object/array): Types.Object | Types.Array | Types.ArrayOfObjects
 - `Types.AnySchema` - Zod schema for Types.Any
 - `Types.Partial<T>` - Type for partial object overrides and defaults that will not allow inferring type from T
 - `Types.NoInfer<T>` - Utility type to prevent TypeScript inference of type T with generics
 
-### 🛡️ Schema Module
+### Schema Module
 
 #### `Schema.validate(data, schema)`
 
-Validates data against a Zod schema with detailed error messages. While z.parse() does this,
-the Schemary error messages are a little more conducive for error logs and API responses.
+Validates data against a Zod schema with detailed error messages. While `z.parse()` does this, the Schemary error
+messages are more conducive for error logs and API responses.
 
 ```typescript
 const UserSchema = z.object({
@@ -329,8 +307,8 @@ Perfect for transforming between API schemas that share common fields but have d
 
 #### `Schema.extract(object, path, schema, options?)`
 
-Extracts data from nested structures with sophisticated path support. Excellent for extracting config from a larger
-structure, or nested params, etc.
+Extracts data from nested structures with sophisticated path support. Excellent for extracting configuration from a
+larger structure, or nested parameters, etc.
 
 ```typescript
 // With defaults and overrides
@@ -355,7 +333,40 @@ console.log(original.user.name); // Still 'John'
 console.log(original.user.tags); // Still ['admin', 'user']
 ```
 
-### 🔄 Mapping Module
+#### `Schema.jsonParse(jsonString, schema, overrides?)`
+
+Parses JSON strings with schema validation:
+
+```typescript
+const UserSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  age: z.number().default(25),
+});
+
+const user = Schema.jsonParse('{"name":"John","email":"john@example.com"}', UserSchema);
+// Result: { name: 'John', email: 'john@example.com', age: 25 }
+```
+
+### JSON Module
+
+#### `JSON.stringify(data, schema, replacer?, space?)`
+
+Stringifies data with schema validation:
+
+```typescript
+import { JSON } from 'schemary';
+
+const UserSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  age: z.number(),
+});
+
+const userString = JSON.stringify(userData, UserSchema, null, 2);
+```
+
+### Mapping Module
 
 Creates powerful bidirectional transformations between different data structures.
 
@@ -389,7 +400,8 @@ const plan = Mapping.compilePlan({
       },
     },
 
-    // Timestamp formatting using predefined formats or you can pass any Valid Luxon format token: https://moment.github.io/luxon/#/formatting?id=table-of-tokens
+    // Timestamp formatting using predefined formats or any valid Luxon format token
+    // See: https://moment.github.io/luxon/#/formatting?id=table-of-tokens
     {
       left: 'createdAt',
       right: 'created',
@@ -416,7 +428,7 @@ const backToSource = plan.reverseMap(targetData, {
 });
 ```
 
-## 🗺️ Advanced Path Navigation
+## Advanced Path Navigation
 
 Schemary supports sophisticated path expressions for accessing nested data:
 
@@ -438,15 +450,14 @@ Schemary supports sophisticated path expressions for accessing nested data:
 
 ### Array Slicing
 
-[[x,y]] where X is the start index and y is the size
+`[[x,y]]` where `x` is the start index and `y` is the size:
 
 ```typescript
-'users[[0]]';            // From start (all elements)
-'users[[2]]';            // From index 2 to end
-'users[[1,3]]';          // Elements 1, 2 and 3 (size 3)
-'users[[-2]]';           // Last 2 elements
-'users[[-2,-2]]';         // last two items, in reverse order
-'users[[-2]]';         // last two items, in forward order
+'users[[0]]'            // From start (all elements)
+'users[[2]]'            // From index 2 to end
+'users[[1,3]]'          // Elements 1, 2 and 3 (size 3)
+'users[[-2]]'           // Last 2 elements, in forward order
+'users[[-2,-2]]'        // Last two items, in reverse order
 ```
 
 ### Complex Nested Operations
@@ -458,10 +469,11 @@ Schemary supports sophisticated path expressions for accessing nested data:
 // Extract items from the first order of each user
 'users[[0]].orders[0].items';
 
-// Top item, from most recent 3 orders from top 3 users   
+// Top item, from most recent 3 orders from top 3 users  
+// Assuming users sorted from highest value to lowest, and orders sorted from oldest to newest
 'users[[0,3]].orders[[-3,3]].items[[0,1]]';
 
-// Field selection from objects
+// Field selection from objects, grabs all the specified fields in one rule, copying them to the target
 'users[0].{id,name,email}';
 ```
 
@@ -472,7 +484,7 @@ Schemary supports sophisticated path expressions for accessing nested data:
 'object.\\[special\\]\\.property'    // Field named "[special].property"
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Union Type Support
 
@@ -532,7 +544,7 @@ const complexPlan = Mapping.compilePlan({
           revenue: item.price * item.quantity,
         })),
         toLeft: (summary: ProductSummary[]) =>
-          summary.map(s => ({ id: s.id, price: summary.revenue, quantity: 1 })),
+          summary.map(s => ({ id: s.id, price: s.revenue, quantity: 1 })),
       },
     },
 
@@ -572,7 +584,7 @@ try {
 }
 ```
 
-## 🎯 Use Cases
+## Use Cases
 
 ### API Request/Response Transformation
 
@@ -585,7 +597,8 @@ const plan = Mapping.compilePlan({
     { left: 'data.user_info.full_name', right: 'user.name' },
     { left: 'data.user_info.email_address', right: 'user.email' },
     {
-      left: 'meta.created_timestamp', right: 'createdAt',
+      left: 'meta.created_timestamp',
+      right: 'createdAt',
       format: {
         type: Mapping.FormatType.TIMESTAMP,
         toLeft: Mapping.Formatting.TimeStamp.UNIX,
@@ -629,16 +642,16 @@ const migrationPlan = Mapping.compilePlan({
 const migratedData = migrationPlan.map(legacyData);
 ```
 
-## 🔗 Ecosystem
+## Ecosystem
 
 - **[Zod](https://zod.dev/)**: Runtime schema validation (peer dependency)
 - **[Luxon](https://moment.github.io/luxon/)**: Timestamp processing and formatting
 
-## 📄 License
+## License
 
 MIT
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please read our contributing guidelines and code of conduct.
 
