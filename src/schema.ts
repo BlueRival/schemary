@@ -5,6 +5,7 @@ import {
   JSONObjectArray,
   JSONSchema,
   JSONArray,
+  Primitive,
 } from './types.js';
 import {
   _shift,
@@ -19,6 +20,8 @@ import {
   NoInferPartial,
 } from './types.js';
 import { z } from 'zod';
+import { extractValue } from './mapping/parser/utilities.js';
+import { Parser } from './mapping/parser/core.js';
 
 /**
  * Shifts fields from a source object OR an array of source objects to the
@@ -168,78 +171,32 @@ export function clone<T extends JSONType>(input: T): T {
 }
 
 /**
- * Extracts and validates a portion of an object using a provided path and schema.
+ * Extracts and validates a portion of an source using a provided path and schema.
  *
- * This utility function navigates through a nested object structure using a dot notation path
+ * This utility function navigates through a nested source structure using a dot notation path
  * or an array of keys, retrieves the value at that path, and validates it against the provided
- * Zod schema. It's designed to work on any object structure, not just configuration data.
+ * Zod schema. It's designed to work on any source structure, not just configuration data.
  *
- * @template T - The expected output type after validation
- * @param object - The object to extract data from
- * @param path - A dot-separated string path (e.g., 'database.credentials.username') or an array of keys
- * @param schema - The Zod schema to validate the extracted value against
- * @param options
- * @returns The validated value of type T
- * @throws Error if the path doesn't exist in the object or if validation fails
+ * @param {JSONAny} source - The JSON source from which to extract the value.
+ * @param {string} path - The path used to locate the value within the source.
+ * @param {z.ZodType<JSONType>} schema - The schema to validate the extracted value against.
+ * @param {Object} [options] - Additional options to process the extraction.
+ * @param {NoInferPartial<JSONType>} [options.defaults] - Default values to merge into the extracted result if certain values are missing.
+ * @param {NoInferPartial<JSONType>} [options.overrides] - Override values to take precedence after extraction. Replaces source value even if it exists.
+ * @return {JSONType} - The value extracted from the source, after optional merging with defaults or overrides, and validated against the schema.
  */
-export function extract<T>(
-  object: JSONAny,
-  path: string | string[],
+export function extract<T extends JSONType>(
+  source: JSONAny,
+  path: string,
   schema: z.ZodType<T>,
   options?: {
-    defaults?: NoInferPartial<T>;
-    overrides?: NoInferPartial<T>;
+    defaults?: NoInferPartial<T> | Primitive;
+    overrides?: NoInferPartial<T> | Primitive;
   },
-): T {
-  // Convert the path to an array of keys if it's a string
-  const keys = Array.isArray(path) ? path : path.split('.');
+): z.infer<typeof schema> {
+  const parsedPath = new Parser(path).parsePath();
 
-  // Navigate through the object to find the value at the specified path
-  let current: JSONType = object; // current will walk the path through the JSON structure, so it needs a broader type
-
-  const walkedPath: string[] = [];
-
-  // walk the input object
-  for (const part of keys) {
-    walkedPath.push(part);
-
-    // Ensure the current value is an object that can be indexed
-    if (_isPrimitive(current)) {
-      throw new Error(
-        `Cannot access property of primitive at [${walkedPath.join('.')}]`,
-      );
-    }
-
-    if (Array.isArray(current)) {
-      if (!part.match(/^[0-9]+$/)) {
-        throw new Error(`Expected array index at [${walkedPath.join('.')}]`);
-      }
-
-      const index = parseInt(part);
-
-      if (index >= current.length || index < 0) {
-        throw new Error(
-          `Index out of range for array at [${walkedPath.join('.')}]`,
-        );
-      }
-
-      current = current[index];
-      continue;
-    }
-
-    // Check if the key exists in the current object
-    if (!(part in current)) {
-      if (options?.defaults) {
-        current = options.defaults as JSONType; // we know this is the case because of how Overrides<> works
-        break; // we are out of path, so the default becomes current
-      }
-
-      throw new Error(`Path ends at [${walkedPath.join('.')}]`);
-    }
-
-    // Move to the next level in the object
-    current = current[part];
-  }
+  let current = extractValue(source, parsedPath);
 
   function merge(first: JSONType, second: JSONType): JSONType {
     // we don't try to merge primitives or dissimilar types, just keep the priority
@@ -266,10 +223,13 @@ export function extract<T>(
   }
 
   if (options?.defaults) {
-    if (_isPrimitive(options.defaults)) {
-      // Whatever in current is fine, the only time a primitive overrides the
-      // real value is if the path doesn't exist, and that is handled above
-      // in the loop.
+    // take all the defaults if no existing value
+    if (current === undefined) {
+      return schema.parse(options.defaults);
+    }
+
+    // any non-undefined primitive value makes defaults irrelevant
+    if (_isPrimitive(current)) {
       return schema.parse(current);
     }
 

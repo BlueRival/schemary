@@ -200,7 +200,7 @@ describe('Schema', () => {
       };
 
       const result = shift(source, treeSchema);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         value: 'root',
         children: [
           { value: 'child1' },
@@ -228,7 +228,7 @@ describe('Schema', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (source.dog as any).country = 'Unknown';
 
-      expect(result).toEqual(source);
+      expect(result).toStrictEqual(source);
     });
 
     it('should correctly shift an object by merging defaults and validating with schema', () => {
@@ -242,7 +242,7 @@ describe('Schema', () => {
 
       const result = shift(source, targetSchema, override);
 
-      expect(result).toEqual({ name: 'Alice', age: 25, country: 'USA' });
+      expect(result).toStrictEqual({ name: 'Alice', age: 25, country: 'USA' });
     });
 
     it('should ensure that modifying the returned object does not modify source or overrides', () => {
@@ -303,7 +303,7 @@ describe('Schema', () => {
 
       const result = shift(source, targetSchema);
 
-      expect(result).toEqual({ name: 'Alice', age: 30 });
+      expect(result).toStrictEqual({ name: 'Alice', age: 30 });
     });
 
     it('should only take defaults if not in source', () => {
@@ -318,7 +318,11 @@ describe('Schema', () => {
 
       const result = shift(source, targetSchema, defaults);
 
-      expect(result).toEqual({ firstName: 'Sam', lastName: 'Smith', age: 25 });
+      expect(result).toStrictEqual({
+        firstName: 'Sam',
+        lastName: 'Smith',
+        age: 25,
+      });
     });
 
     it('should throw an error if input fails schema validation', () => {
@@ -354,7 +358,7 @@ describe('Schema', () => {
 
       const result = shift(source, targetSchema);
 
-      expect(result).toEqual({ name: 'Alice', age: 25 });
+      expect(result).toStrictEqual({ name: 'Alice', age: 25 });
     });
 
     it('should correctly shift an array of objects using an array schema', () => {
@@ -387,7 +391,7 @@ describe('Schema', () => {
       );
 
       // Verify the result
-      expect(result).toEqual([
+      expect(result).toStrictEqual([
         { name: 'Alice', age: 25, active: true },
         { name: 'Bob', age: 30, active: true },
         { name: 'Charlie', age: 35, active: true },
@@ -461,10 +465,10 @@ describe('Schema', () => {
       }
 
       // Verify source array remains unchanged
-      expect(sourceArray).toEqual(originalSourceCopy);
+      expect(sourceArray).toStrictEqual(originalSourceCopy);
 
       // Verify overrides object remains unchanged
-      expect(overrides).toEqual(originalOverridesCopy);
+      expect(overrides).toStrictEqual(originalOverridesCopy);
     });
 
     it('should correctly shift from Schema A to Schema B', () => {
@@ -492,7 +496,11 @@ describe('Schema', () => {
       const defaultsForB = { four: 'Default Four' };
 
       const result: BType = shift(aInstance, schemaB, defaultsForB);
-      expect(result).toEqual({ two: 10, three: true, four: 'Default Four' });
+      expect(result).toStrictEqual({
+        two: 10,
+        three: true,
+        four: 'Default Four',
+      });
     });
 
     it('should throw an error with array source and object target', () => {
@@ -501,20 +509,9 @@ describe('Schema', () => {
         some: z.string(),
       });
 
-      try {
-        shift(source, schema);
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toStrictEqual(
-            'target schema is not an array type but source is an array',
-          );
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+      expect(() => shift(source, schema)).toThrow(
+        'target schema is not an array type but source is an array',
+      );
     });
 
     it('should throw an error with object source and array target', () => {
@@ -524,21 +521,9 @@ describe('Schema', () => {
           some: z.string(),
         }),
       );
-
-      try {
-        shift(source, schema);
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toStrictEqual(
-            'target schema is an array type but source is not an array',
-          );
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+      expect(() => shift(source, schema)).toThrow(
+        'target schema is an array type but source is not an array',
+      );
     });
 
     describe('union tests', () => {
@@ -669,8 +654,8 @@ describe('Schema', () => {
           booleanDiscriminatorSchema,
         );
 
-        expect(result1).toEqual({ id: 1, data: 'test' });
-        expect(result2).toEqual({ active: true, data: 'test' });
+        expect(result1).toStrictEqual({ id: 1, data: 'test' });
+        expect(result2).toStrictEqual({ active: true, data: 'test' });
       });
 
       it('should handle various non-primitive types as invalid discriminator values', () => {
@@ -742,18 +727,9 @@ describe('Schema', () => {
           { type: 'invalid', id: 2, role: 'moderator', accessLevel: 5 }, // Invalid type
         ];
 
-        try {
-          shift(mixedArray, arraySchema);
-          expect('this should not be reached').toBe('test failed');
-        } catch (error) {
-          if (error instanceof Error) {
-            expect(error.message).toStrictEqual(
-              'discriminator value not found: invalid',
-            );
-          } else {
-            expect('this should not be reached').toBe('test failed');
-          }
-        }
+        expect(() => shift(mixedArray, arraySchema)).toThrow(
+          'discriminator value not found: invalid',
+        );
       });
 
       it('should correctly identify and shift discriminated union with non-array input', () => {
@@ -832,80 +808,83 @@ describe('Schema', () => {
           invalidField: 'something',
         };
 
-        try {
-          shift(invalidObject, usersSchema);
-          expect('this should not be reached').toBe('test failed');
-        } catch (error) {
-          if (error instanceof Error) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            const message = JSON.parse('[' + error.message + ']');
+        const errorMessage = `[
+  {
+    "received": "invalid",
+    "code": "invalid_literal",
+    "expected": "admin",
+    "path": [
+      "type"
+    ],
+    "message": "Invalid literal value, expected \\"admin\\""
+  },
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "string",
+    "path": [
+      "id"
+    ],
+    "message": "Expected number, received string"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "role"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "accessLevel"
+    ],
+    "message": "Required"
+  }
+], [
+  {
+    "received": "invalid",
+    "code": "invalid_literal",
+    "expected": "user",
+    "path": [
+      "type"
+    ],
+    "message": "Invalid literal value, expected \\"user\\""
+  },
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "string",
+    "path": [
+      "id"
+    ],
+    "message": "Expected number, received string"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "name"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "email"
+    ],
+    "message": "Required"
+  }
+]`;
 
-            expect(message).toStrictEqual([
-              [
-                {
-                  received: 'invalid',
-                  code: 'invalid_literal',
-                  expected: 'admin',
-                  path: ['type'],
-                  message: 'Invalid literal value, expected "admin"',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'number',
-                  received: 'string',
-                  path: ['id'],
-                  message: 'Expected number, received string',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'string',
-                  received: 'undefined',
-                  path: ['role'],
-                  message: 'Required',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'number',
-                  received: 'undefined',
-                  path: ['accessLevel'],
-                  message: 'Required',
-                },
-              ],
-              [
-                {
-                  received: 'invalid',
-                  code: 'invalid_literal',
-                  expected: 'user',
-                  path: ['type'],
-                  message: 'Invalid literal value, expected "user"',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'number',
-                  received: 'string',
-                  path: ['id'],
-                  message: 'Expected number, received string',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'string',
-                  received: 'undefined',
-                  path: ['name'],
-                  message: 'Required',
-                },
-                {
-                  code: 'invalid_type',
-                  expected: 'string',
-                  received: 'undefined',
-                  path: ['email'],
-                  message: 'Required',
-                },
-              ],
-            ]);
-          } else {
-            expect('this should not be reached').toBe('test failed');
-          }
-        }
+        expect(() => shift(invalidObject, usersSchema)).toThrow(errorMessage);
       });
 
       it('should throw error when array element does not match any schema in union', () => {
@@ -1032,7 +1011,7 @@ describe('Schema', () => {
       ];
       const result = clone(input);
 
-      expect(result).toEqual(input);
+      expect(result).toStrictEqual(input);
       expect(result).not.toBe(input);
       expect(result[0]).not.toBe(input[0]);
       expect(result[1]).not.toBe(input[1]);
@@ -1046,18 +1025,9 @@ describe('Schema', () => {
       ];
 
       inputs.forEach((input) => {
-        try {
+        expect(() => {
           clone(input as JSONType);
-          expect('this should not be reached').toBe('test failed');
-        } catch (error) {
-          if (error instanceof Error) {
-            expect(error.message).toStrictEqual(
-              'clone only supports JSON types',
-            );
-          } else {
-            expect('this should not be reached').toBe('test failed');
-          }
-        }
+        }).toThrow('clone only supports JSON types');
       });
     });
 
@@ -1070,8 +1040,8 @@ describe('Schema', () => {
     });
 
     it('should handle empty objects and arrays', () => {
-      expect(clone({})).toEqual({});
-      expect(clone([])).toEqual([]);
+      expect(clone({})).toStrictEqual({});
+      expect(clone([])).toStrictEqual([]);
     });
   });
 
@@ -1083,7 +1053,7 @@ describe('Schema', () => {
           value: 'overridden',
         },
       });
-      expect(result).toEqual({ value: 'overridden' });
+      expect(result).toStrictEqual({ value: 'overridden' });
     });
 
     it('should use defaults when the path does not exist', () => {
@@ -1092,7 +1062,7 @@ describe('Schema', () => {
         defaults: 'default value',
       });
 
-      expect(result).toEqual('default value');
+      expect(result).toStrictEqual('default value');
     });
 
     it('should use default primitive when current value is not an object', () => {
@@ -1100,7 +1070,7 @@ describe('Schema', () => {
       const result = extract(obj, 'primitive', z.number(), { defaults: 100 });
 
       // Should still use the original value since it exists
-      expect(result).toEqual(42);
+      expect(result).toStrictEqual(42);
     });
 
     it('should merge default object with current object', () => {
@@ -1117,28 +1087,50 @@ describe('Schema', () => {
       );
 
       // Current name (original) should be preserved, default timeout added
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         name: 'original',
         active: true,
         timeout: 30,
       });
     });
 
-    it('should use defaults with a null/undefined value', () => {
-      const obj = { config: null };
+    it('should not default a null primitive', () => {
+      const obj = {
+        config: {
+          encryption: null,
+        },
+      };
+      const result = extract(obj, 'config.encryption', z.string().nullable(), {
+        defaults: 'TLS',
+      });
+
+      expect(result).toStrictEqual(null);
+    });
+
+    it('should not default a null field', () => {
+      const obj = {
+        config: {
+          encryption: null,
+        },
+      };
       const result = extract(
         obj,
         'config',
         z.object({
-          name: z.string(),
-          timeout: z.number(),
+          encryption: z.string().nullable(),
+          type: z.string().nullable(),
         }),
-        { defaults: { name: 'default name', timeout: 30 } },
+        {
+          defaults: {
+            encryption: 'TLS',
+            type: 'RSA',
+          },
+        },
       );
 
-      expect(result).toEqual({
-        name: 'default name',
-        timeout: 30,
+      expect(result).toStrictEqual({
+        encryption: null,
+        type: 'RSA',
       });
     });
 
@@ -1149,7 +1141,7 @@ describe('Schema', () => {
       });
 
       // Original array should be preserved as array merging gives priority to the current values
-      expect(result).toEqual([1, 2, 5]);
+      expect(result).toStrictEqual([1, 2, 5]);
     });
 
     it('should use defaults with different types (non-matching arrays/objects)', () => {
@@ -1160,7 +1152,7 @@ describe('Schema', () => {
       });
 
       // When types don't match, should keep the current value
-      expect(result).toEqual([1, 2, 3]);
+      expect(result).toStrictEqual([1, 2, 3]);
 
       // Test the reverse case
       const obj2 = { config: { name: 'test' } };
@@ -1169,13 +1161,13 @@ describe('Schema', () => {
       });
 
       // When types don't match, should keep the current value
-      expect(result2).toEqual({ name: 'test' });
+      expect(result2).toStrictEqual({ name: 'test' });
     });
 
     it('should extract a primitive', () => {
       const obj = { nested: { value: 'original' } };
       const result = extract(obj, 'nested.value', z.string());
-      expect(result).toEqual('original');
+      expect(result).toStrictEqual('original');
     });
 
     it('should override a primitive', () => {
@@ -1183,7 +1175,7 @@ describe('Schema', () => {
       const result = extract(obj, 'nested.value', z.string(), {
         overrides: 'override',
       });
-      expect(result).toEqual('override');
+      expect(result).toStrictEqual('override');
     });
 
     it('should throw an error when trying to index an array without a number', () => {
@@ -1196,40 +1188,23 @@ describe('Schema', () => {
         },
       };
 
-      try {
+      expect(() =>
         extract(
           obj,
-          'data.items.not-a-number',
+          'data.items[not-a-number]',
           z.object({
             id: z.number(),
             name: z.string(),
           }),
           { overrides: { name: 'override' } },
-        );
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe(
-            'Expected array index at [data.items.not-a-number]',
-          );
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+        ),
+      ).toThrow("Parse error at position 11: Expected integer, got 'n'");
     });
 
     it('should extract a property from a simple object', () => {
       const obj = { name: 'Alice', age: 25, active: true };
       const result = extract(obj, 'name', z.string());
       expect(result).toBe('Alice');
-    });
-
-    it('should extract a property using a path array', () => {
-      const obj = { user: { profile: { name: 'Bob', age: 30 } } };
-      const result = extract(obj, ['user', 'profile', 'name'], z.string());
-      expect(result).toBe('Bob');
     });
 
     it('should extract a property using a dot-separated path string', () => {
@@ -1270,7 +1245,7 @@ describe('Schema', () => {
       });
 
       const result = extract(obj, 'app.config.server', serverSchema);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         port: 3000,
         host: 'localhost',
         options: {
@@ -1308,102 +1283,24 @@ describe('Schema', () => {
       }
     });
 
-    it('should throw an error with validation message when validation fails with array path', () => {
-      const obj = { nested: { value: 'not a number' } };
-
-      try {
-        extract(obj, ['nested', 'value'], z.number());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const message = JSON.parse(error.message);
-
-          expect(message).toStrictEqual([
-            {
-              code: 'invalid_type',
-              expected: 'number',
-              received: 'string',
-              path: [],
-              message: 'Expected number, received string',
-            },
-          ]);
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
-    });
-
-    it('should throw a specific error when trying to access a property of a non-object', () => {
+    it('should return undefined when trying to access a property of a non-object with no default', () => {
       const obj = { primitive: 42 };
 
-      try {
-        extract(obj, 'primitive.nonexistent', z.any());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe(
-            'Cannot access property of primitive at [primitive.nonexistent]',
-          );
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+      const result = extract(
+        obj,
+        'primitive.nonexistent',
+        z.string().optional(),
+      );
+
+      expect(result).toStrictEqual(undefined);
     });
 
-    it('should throw a specific error when the first key in path does not exist - with string path', () => {
-      const obj = { existing: { value: 'something' } };
-
-      try {
-        extract(obj, 'nonexistent.value', z.any());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe('Path ends at [nonexistent]');
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
-    });
-
-    it('should throw a specific error when the first key in path does not exist - with array path', () => {
-      const obj = { existing: { value: 'something' } };
-
-      try {
-        extract(obj, ['nonexistent', 'value'], z.any());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe('Path ends at [nonexistent]');
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
-    });
-
-    it('should throw a specific error when a nested key part does not exist in the object', () => {
+    it('should return undefined when a nested key part does not exist in the object', () => {
       const obj = { nested: { existing: 'value' } };
 
-      try {
-        extract(obj, 'nested.nonexistent.deep', z.any());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe('Path ends at [nested.nonexistent]');
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+      const result = extract(obj, 'nested.nonexistent.deep', z.undefined());
+
+      expect(result).toStrictEqual(undefined);
     });
 
     it('should handle null or non-object values by replacing with an empty object before applying overrides', () => {
@@ -1417,7 +1314,7 @@ describe('Schema', () => {
         }),
         { overrides: { value: 'overridden' } },
       );
-      expect(result1).toEqual({ value: 'overridden' });
+      expect(result1).toStrictEqual({ value: 'overridden' });
 
       // Test with primitive value
       const objWithPrimitive = { config: 42 };
@@ -1429,7 +1326,7 @@ describe('Schema', () => {
         }),
         { overrides: { value: 'overridden' } },
       );
-      expect(result2).toEqual({ value: 'overridden' });
+      expect(result2).toStrictEqual({ value: 'overridden' });
     });
 
     it('should handle applying both defaults and overrides together', () => {
@@ -1449,7 +1346,7 @@ describe('Schema', () => {
       );
 
       // Should merge in this order: defaults -> original -> overrides
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         existing: 'original',
         default: 'from default',
         override: 'from override',
@@ -1462,7 +1359,7 @@ describe('Schema', () => {
         defaults: 'default value',
       });
 
-      expect(result).toEqual('default value');
+      expect(result).toStrictEqual('default value');
     });
 
     // Test internal merge function behavior
@@ -1476,28 +1373,31 @@ describe('Schema', () => {
 
       // Current behavior is to splice the second array into the first,
       // replacing only the elements in the range of the second array
-      expect(result1).toEqual([5, 6, 3, 4]);
+      expect(result1).toStrictEqual([5, 6, 3, 4]);
     });
 
-    it('should throw a specific error when array index is out of bounds', () => {
+    it('should throw a validation error if ', () => {
       const obj = {
         users: [{ id: 1, name: 'Alice' }],
       };
 
-      try {
-        extract(obj, 'users.1.name', z.string());
-        // If we reach this point, the test should fail
-        expect('this should not be reached').toBe('test failed');
-      } catch (error) {
-        if (error instanceof Error) {
-          expect(error.message).toBe(
-            'Index out of range for array at [users.1]',
-          );
-        } else {
-          // If we reach this point, the test should fail
-          expect('wrong error type').toBe('test failed');
-        }
-      }
+      expect(() => {
+        extract(obj, 'users[1].name', z.string());
+      }).toThrow(
+        JSON.stringify(
+          [
+            {
+              code: 'invalid_type',
+              expected: 'string',
+              received: 'undefined',
+              path: [],
+              message: 'Required',
+            },
+          ],
+          null,
+          2,
+        ),
+      );
     });
 
     it('should handle valid arrays in the object path', () => {
@@ -1507,7 +1407,7 @@ describe('Schema', () => {
           { id: 2, name: 'Bob' },
         ],
       };
-      const result = extract(obj, 'users.1.name', z.string());
+      const result = extract(obj, 'users[1].name', z.string());
       expect(result).toBe('Bob');
     });
 
@@ -1591,11 +1491,11 @@ describe('Schema', () => {
       result.options.newProperty = 'should not affect any input objects';
 
       // Verify the source object remains unchanged
-      expect(obj).toEqual(originalObj);
+      expect(obj).toStrictEqual(originalObj);
 
       // Verify defaults and overrides remain unchanged
-      expect(defaults).toEqual(originalDefaults);
-      expect(overrides).toEqual(originalOverrides);
+      expect(defaults).toStrictEqual(originalDefaults);
+      expect(overrides).toStrictEqual(originalOverrides);
 
       // Test with arrays
       const arrayObj = {
@@ -1628,7 +1528,7 @@ describe('Schema', () => {
         }),
       });
 
-      const arrayResult = extract(arrayObj, 'users.1', userSchema, {
+      const arrayResult = extract(arrayObj, 'users[1]', userSchema, {
         defaults: arrayDefaults,
         overrides: arrayOverrides,
       });
@@ -1642,9 +1542,9 @@ describe('Schema', () => {
       }
 
       // Verify all source objects remain unchanged
-      expect(arrayObj).toEqual(originalArrayObj);
-      expect(arrayDefaults).toEqual(originalArrayDefaults);
-      expect(arrayOverrides).toEqual(originalArrayOverrides);
+      expect(arrayObj).toStrictEqual(originalArrayObj);
+      expect(arrayDefaults).toStrictEqual(originalArrayDefaults);
+      expect(arrayOverrides).toStrictEqual(originalArrayOverrides);
     });
   });
 
@@ -1688,7 +1588,7 @@ describe('Schema', () => {
         TypeTwoSchema.strict(),
       ]);
 
-      const result = extract(nestedObj, 'data.users.1', usersSchema);
+      const result = extract(nestedObj, 'data.users[1]', usersSchema);
 
       testTypeTwoObject(result, undefined, false);
     });
@@ -1697,7 +1597,7 @@ describe('Schema', () => {
       // Define a regular union schema
       const usersSchema = z.union([TypeOneSchema, TypeTwoSchema]);
 
-      const result = extract(nestedObj, 'data.users.1', usersSchema);
+      const result = extract(nestedObj, 'data.users[1]', usersSchema);
       testTypeTwoObject(result, undefined, false);
     });
 
@@ -1756,7 +1656,7 @@ describe('Schema', () => {
       const arraySchema = z.array(elementSchema);
 
       const result = validate(params, arraySchema);
-      expect(result).toEqual(params);
+      expect(result).toStrictEqual(params);
     });
 
     it('should parse and validate request parameters', () => {
@@ -1768,7 +1668,7 @@ describe('Schema', () => {
       });
 
       const result = validate(params, schema);
-      expect(result).toEqual(params);
+      expect(result).toStrictEqual(params);
     });
 
     it('should throw Error if validation fails', () => {
@@ -1800,7 +1700,7 @@ describe('Schema', () => {
       });
 
       const result = validate(params, schema);
-      expect(result).toEqual(params);
+      expect(result).toStrictEqual(params);
     });
 
     it('should fail validation with detailed error messages', () => {
@@ -1998,7 +1898,7 @@ describe('Schema', () => {
       // Verify default values were added
       expect(result.item.description).toBe('Default description');
       expect(result.item.status).toBe('active');
-      expect(result.item.tags).toEqual([]);
+      expect(result.item.tags).toStrictEqual([]);
 
       // Make deep modifications to the result
       result.item.title = 'Modified Title';
@@ -2007,7 +1907,7 @@ describe('Schema', () => {
       result.item.tags.push('new-tag');
 
       // Verify the source object remains unchanged (no default values added)
-      expect(params).toEqual(originalParams);
+      expect(params).toStrictEqual(originalParams);
       expect(params.item).not.toHaveProperty('description');
       expect(params.item).not.toHaveProperty('status');
       expect(params.item).not.toHaveProperty('tags');
@@ -2070,7 +1970,7 @@ describe('Schema', () => {
       nestedResult.user.profile.settings.notifications = false;
 
       // Verify source object remains unchanged (no default values added)
-      expect(nestedParams).toEqual(originalNestedParams);
+      expect(nestedParams).toStrictEqual(originalNestedParams);
     });
   });
 
@@ -2199,7 +2099,7 @@ describe('Schema', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = shift(source, goodLazySchema);
 
-      expect(result).toEqual(source);
+      expect(result).toStrictEqual(source);
     });
   });
 });

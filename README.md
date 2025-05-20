@@ -26,17 +26,17 @@ new, far more powerful library.
 npm install schemary --save
 ```
 
-Optional, if you will be using any Zod schema transformations, v3 recommended:
+### Optional Dependencies
 
-```bash
-npm install zod@3 --save
-```
-
-Optional, if you will be using any timestamp transformations in mappings, v3 recommended:
+**Luxon (Optional)**: If you will be using timestamp formatting or transformations, you'll need to install Luxon:
 
 ```bash
 npm install luxon@3 --save
 ```
+
+If Luxon is not installed, the timestamp formatting functions will throw clear error messages indicating how to install it.
+
+**Note**: Zod is required and is included as a dependency with the library
 
 **ESM Only**: Schemary is an ESM-only package. Your project needs `"type": "module"` in `package.json` or use `.mjs`
 files.
@@ -405,6 +405,7 @@ const plan = Mapping.compilePlan({
 
     // Timestamp formatting using predefined formats or any valid Luxon format token
     // See: https://moment.github.io/luxon/#/formatting?id=table-of-tokens
+    // Note: Requires Luxon to be installed (npm install luxon)
     {
       left: 'createdAt',
       right: 'created',
@@ -647,8 +648,8 @@ const migratedData = migrationPlan.map(legacyData);
 
 ## Ecosystem
 
-- **[Zod](https://zod.dev/)**: Runtime schema validation (peer dependency)
-- **[Luxon](https://moment.github.io/luxon/)**: Timestamp processing and formatting
+- **[Zod](https://zod.dev/)**: Runtime schema validation (dependency)
+- **[Luxon](https://moment.github.io/luxon/)**: Optional dependency for timestamp processing and formatting
 
 ## License
 
