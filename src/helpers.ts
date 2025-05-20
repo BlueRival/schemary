@@ -19,6 +19,8 @@ import {
   InputObjectSchema,
   NoInferPartial,
   ZodLazyObjectSchemaDefPart,
+  JSONType,
+  JSONSchema,
 } from './types.js';
 
 import { JSONObject } from './types.js';
@@ -272,4 +274,26 @@ export function _generateErrorMessage(
   message: string,
 ): string {
   return `[${path.join('.')} - ${message}]`;
+}
+
+/**
+ * Deep clones an input value and returns a typed clone.
+ *
+ * @template T - The type of the input and the returned cloned object
+ * @param input - The input object to deep clone
+ * @returns A deep-cloned and typed copy of the input object
+ */
+export function clone<T extends JSONType>(input: T): T {
+  // attempt to optimize handling primitive values
+  if (_isPrimitive(input)) return input;
+
+  // we only clone JSON types, everything else is not valid
+  try {
+    JSONSchema.parse(input);
+  } catch {
+    throw new Error('clone only supports JSON types');
+  }
+
+  // one day, we will optimize, maybe, its probably fine
+  return JSON.parse(JSON.stringify(input)) as T;
 }

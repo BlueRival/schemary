@@ -1,5 +1,5 @@
 import { JSONType, JSONArray } from '../../../types.js';
-import { clone } from '../../../schema.js';
+import { clone } from '../../../helpers.js';
 import {
   AbstractPathIteratorSegment,
   ChainResult,

@@ -3,7 +3,6 @@ import {
   JSONObject,
   JSONAny,
   JSONObjectArray,
-  JSONSchema,
   JSONArray,
   Primitive,
 } from './types.js';
@@ -13,6 +12,7 @@ import {
   _getUnionErrorMessages,
   _isPrimitive,
   _isZodArray,
+  clone as helperClone,
 } from './helpers.js';
 import {
   InputObjectSchema,
@@ -22,6 +22,8 @@ import {
 import { z } from 'zod';
 import { extractValue } from './mapping/parser/utilities.js';
 import { Parser } from './mapping/parser/core.js';
+
+export const clone = helperClone;
 
 /**
  * Shifts fields from a source object OR an array of source objects to the
@@ -146,28 +148,6 @@ export function validate<
 
     throw new Error(`error in request params: ${errorMessages}`);
   }
-}
-
-/**
- * Deep clones an input value and returns a typed clone.
- *
- * @template T - The type of the input and the returned cloned object
- * @param input - The input object to deep clone
- * @returns A deep-cloned and typed copy of the input object
- */
-export function clone<T extends JSONType>(input: T): T {
-  // attempt to optimize handling primitive values
-  if (_isPrimitive(input)) return input;
-
-  // we only clone JSON types, everything else is not valid
-  try {
-    JSONSchema.parse(input);
-  } catch {
-    throw new Error('clone only supports JSON types');
-  }
-
-  // one day, we will optimize, maybe, its probably fine
-  return JSON.parse(JSON.stringify(input)) as T;
 }
 
 /**
