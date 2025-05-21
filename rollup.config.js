@@ -13,7 +13,7 @@ export default {
   plugins: [
     resolve(),
     commonjs(),
-    typescript({ tsconfig: './tsconfig.build.json' }),
+    typescript({ module: 'NodeNext', tsconfig: './tsconfig.build.json' }),
   ],
   treeshake: true,
 };
