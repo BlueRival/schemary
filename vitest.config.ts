@@ -4,8 +4,7 @@ import { defineConfig, configDefaults } from 'vitest/config';
 // Define test patterns
 const patterns: Record<string, string[]> = {
   unit: ['src/**/*.spec.ts'],
-  e2e: ['test/e2e/**/*.e2e-spec.ts'],
-  all: ['src/**/*.spec.ts', 'test/e2e/**/*.e2e-spec.ts'],
+  build: ['test/**/*.spec.ts'],
 };
 
 // Get pattern from environment or default to all
@@ -20,7 +19,10 @@ const include: string[] = patterns[targetTests];
 // Coverage exclude patterns
 const coverageExclude = [
   ...(configDefaults.coverage.exclude ?? []),
+  'test/**',
+  'rollup/**',
   'scripts/**',
+  'src/mapping/parser/ast/types.ts',
 ];
 
 export default defineConfig({
@@ -35,7 +37,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json'],
-      exclude: [...coverageExclude, 'test'],
+      exclude: [...coverageExclude],
     },
   },
 });
