@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z, ZodDiscriminatedUnion, ZodUnion } from 'zod';
 import { Schema as TestSchema, Types } from '../../src/index.js';
 
-export function createTests<ArrayOfObjects extends Types.ArrayOfObjects>(
-  Schema: typeof TestSchema,
-) {
+export function createTests(Schema: typeof TestSchema) {
   const { clone, shift, extract, validate } = Schema;
 
   type ZodUnionType<T> = (
@@ -683,7 +681,7 @@ export function createTests<ArrayOfObjects extends Types.ArrayOfObjects>(
             { type: /regex/, id: 1 }, // RegExp
             { type: new Map(), id: 1 }, // Map
             { type: new Set(), id: 1 }, // Set
-          ] as unknown as ArrayOfObjects;
+          ] as unknown as Types.ArrayOfObjects;
 
           testCases.forEach((testCase) => {
             expect(() => shift(testCase, usersSchema)).toThrow(
