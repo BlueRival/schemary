@@ -8,21 +8,24 @@ export default {
   output: {
     file: 'dist/index.js',
     format: 'es',
-    sourcemap: true,
+    sourcemap: false,
     exports: 'named',
   },
   plugins: [
     resolve(),
     commonjs(),
-    typescript({ module: 'NodeNext', tsconfig: './tsconfig.build.json' }),
+    typescript({
+      module: 'NodeNext',
+      tsconfig: './tsconfig.build.json',
+      declaration: false, // Explicitly disable declaration files, we will roll these up manually
+      noEmitOnError: true, // Don't emit JS files if there are errors
+    }),
     terser({
-      // ← add terser() at the end
-      module: true, // enable top-level scope minification
+      module: true,
       compress: {
-        drop_console: true, // optional: strip console.* calls
+        drop_console: true,
       },
-      mangle: true, // shorten variable and function names
-      // see full list of options in the plugin README
+      mangle: true,
     }),
   ],
   treeshake: true,

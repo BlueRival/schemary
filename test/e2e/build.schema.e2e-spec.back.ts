@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z, ZodDiscriminatedUnion, ZodUnion } from 'zod';
-import { clone, shift, extract, validate } from './schema.js';
-import { JSONObjectArray, JSONType } from './types.js';
+import { Schema, Types } from '../../dist/index.js';
+
+const { clone, shift, extract, validate } = Schema;
 
 type ZodUnionType<T> = (
   | ZodDiscriminatedUnion<
@@ -30,7 +31,7 @@ const TypeTwoSchema = z.object({
 });
 type TypeTwo = z.infer<typeof TypeTwoSchema>;
 
-type Types = TypeTwo | TypeOne;
+type TestTypes = TypeTwo | TypeOne;
 
 // Input matches the 'admin' variant
 const adminInputDirty: TypeOne = {
@@ -209,7 +210,7 @@ describe('Schema', () => {
       });
     });
 
-    it.only('should correctly shift a record', () => {
+    it('should correctly shift a record', () => {
       const source = {
         person: { name: 'Alice', age: 25 },
         dog: { name: 'Fido', age: 3 },
@@ -528,7 +529,7 @@ describe('Schema', () => {
 
     describe('union tests', () => {
       function test<
-        TargetSchema extends ZodUnionType<Types>, // Schema is ZodObjectSchemaDef<T> or ZodArraySchemaDef<T>
+        TargetSchema extends ZodUnionType<TestTypes>, // Schema is ZodObjectSchemaDef<T> or ZodArraySchemaDef<T>
       >(schema: TargetSchema) {
         testTypeOneObject(shift(adminInputDirty, schema), undefined, true);
         testTypeTwoObject(
@@ -538,7 +539,7 @@ describe('Schema', () => {
         );
       }
 
-      function testArray<TargetSchema extends ZodUnionType<Types>>(
+      function testArray<TargetSchema extends ZodUnionType<TestTypes>>(
         schema: TargetSchema,
       ) {
         const ZodArraySchema = z.array(schema);
@@ -666,7 +667,7 @@ describe('Schema', () => {
         ]);
 
         // Test various non-primitive types as discriminator values
-        const testCases: JSONObjectArray = [
+        const testCases = [
           { type: {}, id: 1 }, // Empty object
           { type: [], id: 1 }, // Empty array
           { type: [1, 2, 3], id: 1 }, // Array with values
@@ -675,7 +676,7 @@ describe('Schema', () => {
           { type: /regex/, id: 1 }, // RegExp
           { type: new Map(), id: 1 }, // Map
           { type: new Set(), id: 1 }, // Set
-        ] as unknown as JSONObjectArray;
+        ] as unknown as Types.ArrayOfObjects;
 
         testCases.forEach((testCase) => {
           expect(() => shift(testCase, usersSchema)).toThrow(
@@ -1026,7 +1027,7 @@ describe('Schema', () => {
 
       inputs.forEach((input) => {
         expect(() => {
-          clone(input as JSONType);
+          clone(input as Types.JSON);
         }).toThrow('clone only supports JSON types');
       });
     });

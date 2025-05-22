@@ -13,7 +13,12 @@ export default {
   plugins: [
     resolve(),
     commonjs(),
-    typescript({ module: 'NodeNext', tsconfig: './tsconfig.build.json' }),
+    typescript({
+      module: 'NodeNext',
+      tsconfig: './tsconfig.build.json',
+      declaration: false, // Explicitly disable declaration files, we will roll these up manually
+      noEmitOnError: true, // Don't emit JS files if there are errors
+    }),
   ],
   treeshake: true,
 };

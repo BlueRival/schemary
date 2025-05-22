@@ -13,14 +13,9 @@
     "incremental": false,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.tsbuildinfo",
     "sourceMap": true,
-    "removeComments": false
   },
   "include": [
-    "package.json",
-    "src/**/*.ts",
-    "src/**/*.json",
-    "src/**/*.md",
-    "test/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "dist",

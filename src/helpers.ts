@@ -1,14 +1,4 @@
-import {
-  z,
-  ZodArray,
-  ZodDiscriminatedUnion,
-  ZodLazy,
-  ZodObject,
-  ZodType,
-  ZodTypeAny,
-  ZodUnion,
-  ZodRecord,
-} from 'zod';
+import { z, ZodTypeAny } from 'zod';
 
 import {
   Primitive,
@@ -25,8 +15,21 @@ import {
 
 import { JSONObject } from './types.js';
 
+/**
+ * We bake zod types into the compiled output file, so we can't use
+ * instanceof. The types compiled into the output file will not match
+ * the Zod types passed in to the library because they come from different
+ * instances of Zod at that point.
+ *
+ * @param {ZodTypeAny} schema
+ * @param type
+ */
+function _isType(schema: ZodTypeAny, type: string): boolean {
+  return schema?.constructor?.name === type;
+}
+
 export function _isZodArray(schema: ZodTypeAny): boolean {
-  return schema instanceof ZodArray;
+  return _isType(schema, 'ZodArray');
 }
 
 /**
@@ -37,7 +40,7 @@ export function _isZodArray(schema: ZodTypeAny): boolean {
  */
 function _isZodDiscriminatedUnion(schema: ZodTypeAny): boolean {
   return (
-    schema instanceof ZodDiscriminatedUnion &&
+    _isType(schema, 'ZodDiscriminatedUnion') &&
     'discriminator' in schema &&
     'optionsMap' in schema
   );
@@ -50,7 +53,7 @@ function _isZodDiscriminatedUnion(schema: ZodTypeAny): boolean {
  * @return {boolean} Returns true if the schema is a ZodUnion type; otherwise, false.
  */
 function _isZodUnion(schema: ZodTypeAny): boolean {
-  return schema instanceof ZodUnion && 'options' in schema;
+  return _isType(schema, 'ZodUnion') && 'options' in schema;
 }
 
 /**
@@ -60,11 +63,11 @@ function _isZodUnion(schema: ZodTypeAny): boolean {
  * @return {boolean} Returns true if the schema is an instance of ZodObject and has a 'strip' property, false otherwise.
  */
 function _isZodObject(schema: ZodTypeAny): boolean {
-  if (schema instanceof ZodObject && 'strip' in schema) {
+  if (_isType(schema, 'ZodObject') && 'strip' in schema) {
     return true;
   }
 
-  return schema instanceof ZodRecord;
+  return _isType(schema, 'ZodRecord');
 }
 
 /**
@@ -73,11 +76,12 @@ function _isZodObject(schema: ZodTypeAny): boolean {
  * @param {ZodTypeAny} schema - The schema to be checked.
  * @return {boolean} Returns true if the schema is an instance of ZodLazy, otherwise false.
  */
-function _isZodLazyObject(schema: unknown): boolean {
-  if (!(schema instanceof ZodLazy) && !(schema instanceof ZodType)) {
+function _isZodLazyObject(schema: ZodTypeAny): boolean {
+  if (!_isType(schema, 'ZodLazy') && !_isType(schema, 'ZodType')) {
     return false;
   }
-  if (!('schema' in schema)) {
+
+  if (!schema || typeof schema !== 'object' || !('schema' in schema)) {
     return false;
   }
 
@@ -188,7 +192,7 @@ function _shiftObject<
   ObjectTargetType extends JSONObject,
   TargetSchema extends ZodObjectSchemaDef<ObjectTargetType>,
 >(sourceObj: JSONObject, targetSchema: TargetSchema): z.infer<TargetSchema> {
-  if (targetSchema instanceof ZodRecord) {
+  if (_isType(targetSchema, 'ZodRecord')) {
     // records are objects that allow arbitrary keys, so nothing to strip
     return targetSchema.parse(sourceObj) as z.infer<TargetSchema>;
   }

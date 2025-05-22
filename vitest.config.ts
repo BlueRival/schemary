@@ -4,7 +4,7 @@ import { defineConfig, configDefaults } from 'vitest/config';
 // Define test patterns
 const patterns: Record<string, string[]> = {
   unit: ['src/**/*.spec.ts'],
-  build: ['test/**/*.spec.ts'],
+  build: ['test/e2e/*.e2e-spec.ts'],
 };
 
 // Get pattern from environment or default to all

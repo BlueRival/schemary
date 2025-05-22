@@ -4,7 +4,9 @@
     "outDir": "dist",
     "noEmit": false,
     "removeComments": true,
-    "declaration": false
+    "declaration": true,
+    "declarationDir": "dist/temp-dts",
+    "emitDeclarationOnly": true
   },
   "exclude": [
     "dist",
