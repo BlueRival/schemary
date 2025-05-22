@@ -15,7 +15,7 @@ export default {
     commonjs(),
     typescript({
       module: 'NodeNext',
-      tsconfig: './tsconfig.build.json',
+      tsconfig: './tsconfig.build-full.json',
       declaration: false, // Explicitly disable declaration files, we will roll these up manually
       noEmitOnError: true, // Don't emit JS files if there are errors
     }),

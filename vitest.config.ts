@@ -15,15 +15,22 @@ if (!(targetTests in patterns)) {
 }
 
 const include: string[] = patterns[targetTests];
-
 // Coverage exclude patterns
-const coverageExclude = [
+let coverageExclude = [
   ...(configDefaults.coverage.exclude ?? []),
   'test/**',
   'rollup/**',
   'scripts/**',
   'src/mapping/parser/ast/types.ts',
 ];
+const coverageInclude: string[] = [];
+
+// for build, we only want to tests the distribution dir
+if (process.env.TARGET_TESTS === 'build') {
+  coverageExclude.push('src/**');
+  coverageExclude = coverageExclude.filter((pattern) => pattern !== 'dist/**');
+  coverageInclude.push('dist/index.js');
+}
 
 export default defineConfig({
   test: {
@@ -38,6 +45,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json'],
       exclude: [...coverageExclude],
+      include: coverageInclude.length > 0 ? [...coverageInclude] : undefined,
     },
   },
 });
