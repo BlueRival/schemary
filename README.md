@@ -624,6 +624,46 @@ const tree = Schema.validate(treeData, TreeSchema);
 const extracted = Schema.extract(tree, 'children[0].children[1].value', z.string());
 ```
 
+### Object/Record Schemas
+
+Object schemas are a common use case that is supported.
+
+```typescript
+const UserSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  age: z.number().min(0).max(150),
+});
+
+const validUser = Schema.validate(userData, UserSchema);
+
+const UserTableSchema = z.record(z.string(), UserSchema);
+
+const validUsersTable = Schema.validate(usersTable, UserTableSchema);
+```
+
+### Array Schemas
+
+Array schemas are supported.
+
+```typescript
+const FruitSchema = z.object({
+   name: z.string().min(2),
+   citrus: z.boolean(),
+});
+
+const FruitsSchema = z.array(FruitSchema);
+
+const validFruitList = Schema.validate(fruitList, FruitsSchema);
+
+const validEmptyFruitList = Schema.validate([], FruitsSchema);
+
+// throws exception
+const invalidEmptyFruitList = Schema.validate([], FruitsSchema.min(1));
+
+const topFruit = Schema.extract(validFruitList, '[0]', FruitSchema);
+```
+
 ### Error Handling
 
 Schemary provides detailed, actionable error messages:
@@ -876,7 +916,7 @@ Thank you for contributing to Schemary! 🚀
 
 # Important Releases
 
-**Schemary v1.2.1** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
+**Schemary v1.2.2** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
 the same time.
 
 **Schemary v1.1.0** - Major fixes in mapping code.
