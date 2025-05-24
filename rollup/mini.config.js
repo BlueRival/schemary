@@ -22,10 +22,14 @@ export default {
     }),
     terser({
       module: true,
+      mangle: false,
       compress: {
+        defaults: false,
         drop_console: true,
+        keep_fargs: true,
+        keep_classnames: true,
+        keep_fnames: true,
       },
-      mangle: true,
     }),
   ],
   treeshake: true,

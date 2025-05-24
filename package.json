@@ -1,6 +1,6 @@
 {
   "name": "schemary",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A schema validation and mapping utility library",
   "type": "module",
   "main": "dist/index.js",
@@ -17,18 +17,15 @@
   ],
   "scripts": {
     "build:dts": "tsc -p tsconfig.build-dts.json && rollup --config rollup/dts.config.js && rm -rf dist/temp-dts",
-    "build:full": "npm run clean && npm run build:dts && rollup --config rollup/full.config.js",
-    "build:mini": "npm run clean && npm run build:dts && rollup --config rollup/mini.config.js",
-    "build": "npm run build:mini",
+    "build": "npm run test && npm run lint && npm run clean && npm run build:dts && rollup --config rollup/mini.config.js",
     "clean": "rm -rf dist",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prepublishOnly": "npm run lint && npm run test && npm run build",
-    "test": "TARGET_TESTS=all vitest run --coverage",
-    "test:build": "npm run build && TARGET_TESTS=build vitest run --coverage",
+    "test": "TARGET_TESTS=unit vitest run --coverage",
     "test:watch": "TARGET_TESTS=unit vitest watch",
-    "test:unit": "TARGET_TESTS=unit vitest run --coverage"
+    "test:build": "TARGET_TESTS=build vitest run"
   },
   "keywords": [
     "schema",

@@ -20,6 +20,7 @@ let coverageExclude = [
   ...(configDefaults.coverage.exclude ?? []),
   'test/**',
   'rollup/**',
+  'node_modules/**',
   'scripts/**',
   'src/mapping/parser/ast/types.ts',
 ];

@@ -5,9 +5,11 @@
 
 A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript.
 
-## Major Release: v1.0
+Only 228k, zero external dependencies.
 
-Schemary has been completely rewritten from the ground up! After over 10 years as a pre-v1 library, **version 1.0**
+## Major Release: v1.x
+
+Schemary has been completely rewritten from the ground up! After over 10 years as a pre-v1 library, **version 1.x**
 represents a total overhaul with dramatically expanded capabilities. This is not an incremental update—it's an entirely
 new, far more powerful library.
 
@@ -25,21 +27,6 @@ new, far more powerful library.
 ```bash
 npm install schemary --save
 ```
-
-### Optional Dependencies
-
-**Luxon (Optional)**: If you will be using timestamp formatting or transformations, you'll need to install Luxon:
-
-```bash
-npm install luxon@3 --save
-```
-
-If Luxon is not installed, the timestamp formatting functions will throw clear error messages indicating how to install it.
-
-**Note**: Zod is required and is included as a dependency with the library
-
-**ESM Only**: Schemary is an ESM-only package. Your project needs `"type": "module"` in `package.json` or use `.mjs`
-files.
 
 ## Quick Start
 
@@ -314,11 +301,20 @@ Extracts data from nested structures with sophisticated path support. Excellent 
 larger structure, or nested parameters, etc.
 
 ```typescript
+const config = await configService.get();
+
+const DatabaseSchema = z.object({
+  host: z.string().min(3),
+  port: z.number().min(1).default(5432),
+  tls: z.boolean().default(false),
+});
+
 // With defaults and overrides
 const mainDatabaseConfig = Schema.extract(config, 'database.main', DatabaseSchema, {
   defaults: { host: 'localhost', port: 5432 },
-  overrides: { ssl: true },
+  overrides: { tls: true },
 });
+// mainDatabaseConfig: { host: 'localhost', port: 5432, tls: true }
 ```
 
 #### `Schema.clone(data)`
@@ -336,26 +332,28 @@ console.log(original.user.name); // Still 'John'
 console.log(original.user.tags); // Still ['admin', 'user']
 ```
 
-#### `Schema.jsonParse(jsonString, schema, overrides?)`
+### JSON Module
 
-Parses JSON strings with schema validation:
+#### `JSON.parse(jsonString, schema, overrides?)`
+
+Parses JSON strings with schema validation, and returns a types value or throws an exception if validation fails.
 
 ```typescript
 const UserSchema = z.object({
   name: z.string(),
   email: z.string(),
-  age: z.number().default(25),
-});
+  age: z.number(),
+}).strip();
 
-const user = Schema.jsonParse('{"name":"John","email":"john@example.com"}', UserSchema);
+const user = Schema.jsonParse('{"name":"John","email":"john@example.com","age":25,"extra":"value"}', UserSchema);
 // Result: { name: 'John', email: 'john@example.com', age: 25 }
 ```
 
-### JSON Module
-
 #### `JSON.stringify(data, schema, replacer?, space?)`
 
-Stringifies data with schema validation:
+Stringifies data with schema validation. Throws an exception if the input doesn't match the schema.
+
+Also accepts replacer and space that are 100% compatible with vanilla JSON.stringify().
 
 ```typescript
 import { JSON } from 'schemary';
@@ -375,7 +373,9 @@ Creates powerful bidirectional transformations between different data structures
 
 #### `Mapping.compilePlan(config)`
 
-Compiles a reusable mapping plan:
+Compiles a reusable mapping plan. A compiled plan can be applied to multiple input values, and will automatically
+map from left to right. .reverseMap() will map from right to left, but not all mappings work bi-directionally. This is
+especially the case if the mapping is reductive in one direction.
 
 ```typescript
 import { Mapping } from 'schemary';
@@ -384,16 +384,34 @@ const plan = Mapping.compilePlan({
   leftSchema: SourceSchema,
   rightSchema: TargetSchema,
   rules: [
-    // Simple field mapping
+    // Simple field mapping, the value of user.firstName from the left will appear unmodified in person.givenName on the right
     { left: 'user.firstName', right: 'person.givenName' },
 
-    // Array element access
-    { left: 'addresses[0].street', right: 'primaryAddress' },
+    // Array element access, allows grabbing a specific item from an array
+    { left: 'addresses[0].street', right: 'primaryAddress.street' },
+    { left: 'addresses[0].city', right: 'primaryAddress.city' },
+    { left: 'addresses[0].state', right: 'primaryAddress.state' },
+    { left: 'addresses[0].zip', right: 'primaryAddress.zip' },
 
-    // Literal values
+    // Array slices take an input of form [[x,y]], where x is the starting index, and y is the length of the slice.
+    // x = 0 is the start of the array.
+    // x = -1 is the end of the array.
+    // x = -2 is the second to last element in the array.
+    // y = 0 is empty slice
+    // y >= 1 is a slice of up to y size (if there is enough elements from x (including x) to fill up to y elements)
+    // y < 0 is a slice in reverse, from x, to x - 1, to x - 2, etc.
+    // y undefined means grab all items from source, starting at index identified by x
+    { left: 'addresses[[1]]', right: 'additionalAddresses' }, // grab all addresses except the first
+
+    // Literal values can be used to set a default. They only work in one direction. If you need to have the same 
+    // field have a default in both directions, you need two rules.
     { literal: 'v2.0', right: 'apiVersion' },
+    { left: 'version', literal: 'v2.1.10' },
 
-    // Transform functions
+    // Transform functions allow changing the value of a fiew when it is mapped, either the encoding or to apply 
+    // custom formatting to a value. Common use cases are mapping through enums, to/from boolean and 0/1 encoding, etc.
+    // If you have a date/time conversion, its recommended you use the TMESTAMP format tool built in, but this is not
+    // required. You could build your own using transform.
     {
       left: 'user.active',
       right: 'person.isActive',
@@ -405,7 +423,7 @@ const plan = Mapping.compilePlan({
 
     // Timestamp formatting using predefined formats or any valid Luxon format token
     // See: https://moment.github.io/luxon/#/formatting?id=table-of-tokens
-    // Note: Requires Luxon to be installed (npm install luxon)
+    // Note: Does NOT required Luxon to be installed
     {
       left: 'createdAt',
       right: 'created',
@@ -415,28 +433,44 @@ const plan = Mapping.compilePlan({
         toRight: Mapping.Formatting.TimeStamp.HTTP, // 'Wed, 15 Jan 2025 14:30:45 GMT'
       },
     },
+    {
+      left: 'eventTime',
+      right: 'eventDate',
+      format: {
+        type: Mapping.FormatType.TIMESTAMP,
+        toLeft: Mapping.Formatting.TimeStamp.HTTP, // 'Wed, 15 Jan 2025 14:30:45 GMT'
+        toRight: 'yyyy-MM-dd', // 2025-01-15
+      },
+    },
   ],
 
   // Rule execution order (default: ASC)
+  // By default all rules are applied one at a time, from first to last. There may be cases when you want the rules applied in reverse order.
   order: {
     toLeft: Mapping.PlanRuleOrder.DESC,
     toRight: Mapping.PlanRuleOrder.ASC,
   },
 });
 
-// Execute transformations
+// Execute mapping as many times as needed on a compiled plan.
 const targetData = plan.map(sourceData);
+
+// map from right to left, but this may not always yield the original object exactly depending on your rules.
 const backToSource = plan.reverseMap(targetData, {
   // Override specific fields
   user: { status: 'active' },
 });
 ```
 
-## Advanced Path Navigation
+### Advanced Path Specification
 
-Schemary supports sophisticated path expressions for accessing nested data:
+Mapping supports sophisticated path expressions for accessing nested data. Some of these patterns were demonstrated in
+the examples above.
 
-### Basic Object Navigation
+### Basic Object Path
+
+Mapping from one field to another in nested objects is straight forward. Keep in mind that the source path may point to
+an entire nested set of objects and arrays. All of that sub-structure is cloned to the target location as is.
 
 ```typescript
 'user.profile.settings.theme'
@@ -446,10 +480,10 @@ Schemary supports sophisticated path expressions for accessing nested data:
 ### Array Access
 
 ```typescript
-'users[0]'              // First element
-'users[-1]'             // Last element  
-'users[2].name'         // Third user's name
-'matrix[1][0]'          // Multi-dimensional arrays
+'users[0]';              // First element
+'users[-1]';             // Last element  
+'users[2].name';         // Third user's name
+'matrix[1][0]';          // Multi-dimensional arrays, this grabs the first element on the second array
 ```
 
 ### Array Slicing
@@ -457,20 +491,20 @@ Schemary supports sophisticated path expressions for accessing nested data:
 `[[x,y]]` where `x` is the start index and `y` is the size:
 
 ```typescript
-'users[[0]]'            // From start (all elements)
-'users[[2]]'            // From index 2 to end
-'users[[1,3]]'          // Elements 1, 2 and 3 (size 3)
-'users[[-2]]'           // Last 2 elements, in forward order
-'users[[-2,-2]]'        // Last two items, in reverse order
+'users[[0]]';            // From start (all elements)
+'users[[2]]';            // From index 2 (third item) to end
+'users[[1,3]]';          // Elements 1 (second item), 2 and 3
+'users[[-2]]';           // Last 2 elements, in forward order
+'users[[-1,-2]]';        // Last two items, in reverse order. Note how negative size starts at the index point, and pulls items from there, moving up the array indexes.
 ```
 
 ### Complex Nested Operations
 
 ```typescript
-// Transform first 3 users, taking only their most recent order
+// Transform first 3 users, taking only their most recent order, assuming orders are sorted from oldest to newest
 'users[[0,3]].orders[-1]';
 
-// Extract items from the first order of each user
+// Extract items from the oldest order of each user
 'users[[0]].orders[0].items';
 
 // Top item, from most recent 3 orders from top 3 users  
@@ -483,49 +517,23 @@ Schemary supports sophisticated path expressions for accessing nested data:
 
 ### Escaped Field Names
 
+If you need to use literal square brackets or periods in your field names, just escape them.
+
+Note: we have double backslashes because TypeScript uses backslashes as well, so we need to escape TypeScript
+backslashes so that a single backslash is handled by the mapping compiler.
+
 ```typescript
 'data.\\[field\\.with\\.dots\\]'     // Field named "[field.with.dots]"
 'object.\\[special\\]\\.property'    // Field named "[special].property"
 ```
 
-## Advanced Features
+### Summary of Complex Mapping Scenarios
 
-### Union Type Support
+Schemary Mapping can handle some pretty crazy stuff. It probably CAN'T handle any possible mapping someone could
+imagine, but it probably CAN handle any legitimate, real-world mapping use case.
 
-```typescript
-// Discriminated unions
-const UserTypeSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('admin'), permissions: z.array(z.string()) }),
-  z.object({ type: z.literal('user'), tier: z.string() })
-]);
-
-const user = Schema.validate(data, UserTypeSchema);
-const shifted = Schema.shift(user, TargetSchema);
-
-// Regular unions
-const FlexibleSchema = z.union([StringSchema, NumberSchema, ObjectSchema]);
-```
-
-### Recursive/Lazy Schemas
-
-```typescript
-type TreeNode = {
-  value: string;
-  children?: TreeNode[];
-};
-
-const TreeSchema: z.ZodType<TreeNode> = z.lazy(() =>
-  z.object({
-    value: z.string(),
-    children: z.array(TreeSchema).optional()
-  })
-);
-
-const tree = Schema.validate(treeData, TreeSchema);
-const extracted = Schema.extract(tree, 'children[0].children[1].value', z.string());
-```
-
-### Complex Mapping Scenarios
+Treat mapping rules almost like a SQL language, where it can't do everything, but it can do legitimate things if your
+underlying datastructures are relatively well thought-out.
 
 ```typescript
 const complexPlan = Mapping.compilePlan({
@@ -566,6 +574,56 @@ const complexPlan = Mapping.compilePlan({
 });
 ```
 
+## Zod Schemas
+
+While Schemary does not include Zod, it does expect valid Zod schemas to be passed in to the functions/tools that use
+them.
+
+Schemary has not been tested with or even designed for every possible kind of Zod schema, but it has been for extremely
+common schema patterns. We will show examples of all the kinds of Zod schemas that Schemary is designed to handle.
+
+### Union Type Support
+
+Schemary can handle both discriminated and naive unions.
+
+```typescript
+// Discriminated unions
+const UserTypeSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('admin'), permissions: z.array(z.string()) }),
+  z.object({ type: z.literal('user'), tier: z.string() })
+]);
+
+const user = Schema.validate(data, UserTypeSchema);
+const shifted = Schema.shift(user, TargetSchema);
+
+// Regular unions
+const FlexibleSchema = z.union([StringSchema, NumberSchema, ObjectSchema]);
+```
+
+### Recursive/Lazy Schemas
+
+Schemary can handle lazy schemas, which are primarily used for recursive schema patterns. For example, a raw,
+unconstrained JSON type, can be a primitive, an object of primitives, an array of primitives, and array of objects, and
+recurse on the same types from there. So the Types.JSON type and Types.JSONSchema are recursive types/schemas that
+Schemary works with no problem.
+
+```typescript
+type TreeNode = {
+  value: string;
+  children?: TreeNode[];
+};
+
+const TreeSchema: z.ZodType<TreeNode> = z.lazy(() =>
+  z.object({
+    value: z.string(),
+    children: z.array(TreeSchema).optional()
+  })
+);
+
+const tree = Schema.validate(treeData, TreeSchema);
+const extracted = Schema.extract(tree, 'children[0].children[1].value', z.string());
+```
+
 ### Error Handling
 
 Schemary provides detailed, actionable error messages:
@@ -588,7 +646,7 @@ try {
 }
 ```
 
-## Use Cases
+## More Example Use Cases
 
 ### API Request/Response Transformation
 
@@ -648,6 +706,13 @@ const migratedData = migrationPlan.map(legacyData);
 
 ## Ecosystem
 
+Schemary bundles and isolates functionality from some 3rd party tools without having to include them as dependencies.
+This is how Schemary can have tight Zod and Luxon support with such an incredibly small build size, and without
+including either as dependencies.
+
+A primary goal of Schemary is, and will remain, to be a minimal sized library, suitable for use anywhere without
+imposing any significant memory weight or load times, even for Lambdas/Cloud Functions/etc.
+
 - **[Zod](https://zod.dev/)**: Runtime schema validation (dependency)
 - **[Luxon](https://moment.github.io/luxon/)**: Optional dependency for timestamp processing and formatting
 
@@ -683,20 +748,25 @@ We welcome contributions! Schemary is open source and benefits from community in
 **Available Scripts:**
 
 ```bash
-npm run build    # Compile TypeScript to dist/
-npm run test     # Run all tests with coverage
-npm run lint     # Run ESLint
-npm run format   # Format code with Prettier
-npm run clean    # Remove dist/ directory
+npm run test       # Run all unit tests with coverage, this is your go-to for development
+npm run build      # Compile TypeScript to dist/index.js and dist/index.d.ts, this will run unit tests before build.
+npm run test:build # Runs light-weight integration tests on dist/index.js
+npm run lint       # Run ESLint
+npm run format     # Format code with Prettier
+npm run clean      # Remove dist/ directory
+ 
 ```
 
-**Before submitting:**
+**Before submitting a pull request:**
+
+Run:
 
 ```bash
-npm run lint && npm run test && npm run build
+npm run build
+npm run test:build
 ```
 
-This is also run automatically by the `prepublishOnly` script.
+This will ensure the code builds and all relevant tests are passing on the pre-built code and the built package.
 
 ### Code Standards
 
@@ -806,7 +876,12 @@ Thank you for contributing to Schemary! 🚀
 
 # Important Releases
 
+**Schemary v1.2.0** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
+the same time.
+
+**Schemary v1.1.0** - Major fixes in mapping code.
+
 **Schemary v1.0.1** - Documentation update.
 
-**Schemary v1.0** - From simple validation to complex bidirectional transformations. Built for modern TypeScript
-applications.
+**Schemary v1.0.0** - Complete re-write from simple validation to complex bidirectional transformations. Built for
+modern TypeScript applications.
