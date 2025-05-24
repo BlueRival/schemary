@@ -876,7 +876,7 @@ Thank you for contributing to Schemary! 🚀
 
 # Important Releases
 
-**Schemary v1.2.0** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
+**Schemary v1.2.1** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
 the same time.
 
 **Schemary v1.1.0** - Major fixes in mapping code.

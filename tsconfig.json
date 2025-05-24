@@ -12,13 +12,14 @@
     "resolveJsonModule": true,
     "incremental": false,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.tsbuildinfo",
-    "sourceMap": true,
+    "sourceMap": true
   },
   "include": [
     "src/**/*.ts"
   ],
   "exclude": [
     "dist",
-    "node_modules"
+    "node_modules",
+    "test"
   ]
 }
