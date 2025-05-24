@@ -3,15 +3,20 @@
 [![CI](https://github.com/BlueRival/schemary/workflows/CI/badge.svg)](https://github.com/BlueRival/schemary/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/BlueRival/schemary/graph/badge.svg)](https://codecov.io/gh/BlueRival/schemary)
 
-A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript & JavaScript.
+A powerful, type-safe schema validation, transformation, and bidirectional mapping library for TypeScript.
 
-Only 228k, zero external dependencies.
+This library, as far as I can tell, is the only maintained tool of its kind on NPM.
+
+Only 268k, zero external dependencies.
 
 ## Major Release: v1.x
 
-Schemary has been completely rewritten from the ground up! After over 10 years as a pre-v1 library, **version 1.x**
-represents a total overhaul with dramatically expanded capabilities. This is not an incremental update—it's an entirely
-new, far more powerful library.
+Schemary has been completely rewritten from the ground up!
+
+After over 10 years as a pre-v1 library, **version 1.x** represents a total overhaul with dramatically expanded
+capabilities.
+
+Note: there is no upgrade path as there is no overlap in the APIs between v0.x and v1.x.
 
 ## What Makes Schemary Special
 
@@ -648,8 +653,8 @@ Array schemas are supported.
 
 ```typescript
 const FruitSchema = z.object({
-   name: z.string().min(2),
-   citrus: z.boolean(),
+  name: z.string().min(2),
+  citrus: z.boolean(),
 });
 
 const FruitsSchema = z.array(FruitSchema);
@@ -753,8 +758,8 @@ including either as dependencies.
 A primary goal of Schemary is, and will remain, to be a minimal sized library, suitable for use anywhere without
 imposing any significant memory weight or load times, even for Lambdas/Cloud Functions/etc.
 
-- **[Zod](https://zod.dev/)**: Runtime schema validation (dependency)
-- **[Luxon](https://moment.github.io/luxon/)**: Optional dependency for timestamp processing and formatting
+- **[Zod](https://zod.dev/)**: Runtime schema validation
+- **[Luxon](https://moment.github.io/luxon/)**: Timestamp parsing and formatting
 
 ## License
 
@@ -908,20 +913,19 @@ When reporting bugs or requesting features:
 
 ### Community
 
-- **Be respectful** you can disagree, but keep the hits above the belt.
-- **Help others** learn and contribute
-- **Follow our code of conduct**
+- **Be respectful** you can disagree, but keep the hits rational and above the belt.
+- **Help others** learn and contribute.
 
 Thank you for contributing to Schemary! 🚀
 
 # Important Releases
 
-**Schemary v1.2.2** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
-the same time.
+**v1.2.x** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
+the same time. Significant documentation enhancements.
 
-**Schemary v1.1.0** - Major fixes in mapping code.
+**v1.1.x** - Major fixes in mapping code.
 
-**Schemary v1.0.1** - Documentation update.
-
-**Schemary v1.0.0** - Complete re-write from simple validation to complex bidirectional transformations. Built for
+**v1.0.x** - Complete re-write from simple validation to complex bidirectional transformations. Built for
 modern TypeScript applications.
+
+**v0.0.2** - The last of the experimental schema management releases 10+ years ago.
