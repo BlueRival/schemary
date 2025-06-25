@@ -151,13 +151,13 @@ enum EventType {
 // Define schemas
 const EventSchema = z.object({
   type: z.nativeEnum(EventType),
-  data: Types.Schema,
+  data: Types.JSON,
 });
 
 type Event = z.infer<typeof EventSchema>;
 
 const HandlerRequestSchema = z.object({
-  data: Types.Schema,
+  data: Types.JSON,
 });
 
 async function router(event: Event): Promise<Types.JSON> {
