@@ -165,13 +165,13 @@ export function validate<
  * @param {NoInferPartial<JSONType>} [options.overrides] - Override values to take precedence after extraction. Replaces source value even if it exists.
  * @return {JSONType} - The value extracted from the source, after optional merging with defaults or overrides, and validated against the schema.
  */
-export function extract<T extends JSONType>(
+export function extract<T extends z.ZodType<unknown, any, unknown>>(
   source: JSONAny,
   path: string,
-  schema: z.ZodType<T>,
+  schema: T,
   options?: {
-    defaults?: NoInferPartial<T> | Primitive;
-    overrides?: NoInferPartial<T> | Primitive;
+    defaults?: NoInferPartial<z.infer<T>> | Primitive;
+    overrides?: NoInferPartial<z.infer<T>> | Primitive;
   },
 ): z.infer<typeof schema> {
   const parsedPath = new Parser(path).parsePath();
