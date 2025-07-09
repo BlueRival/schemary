@@ -30,8 +30,13 @@ Note: there is no upgrade path as there is no overlap in the APIs between v0.x a
 ## Installation
 
 ```bash
-npm install schemary --save
+npm install schemary zod@^3.0.0 --save
 ```
+
+### Requirements
+
+- **Zod**: Version 3.x.x is required as a peer dependency (schemary is compatible with zod v3)
+- **Node.js**: Version 20.0.0 or higher
 
 ## Quick Start
 
@@ -919,6 +924,8 @@ When reporting bugs or requesting features:
 Thank you for contributing to Schemary! 🚀
 
 # Important Releases
+
+**v1.3.x** - Require zod as a peer dependency. Remove baked-in Zod.
 
 **v1.2.x** - Major upgrade to build techniques, removing external dependencies and reducing package size 67% at
 the same time. Significant documentation enhancements.

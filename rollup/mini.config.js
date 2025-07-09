@@ -11,6 +11,7 @@ export default {
     sourcemap: false,
     exports: 'named',
   },
+  external: ['zod'],
   plugins: [
     resolve(),
     commonjs(),

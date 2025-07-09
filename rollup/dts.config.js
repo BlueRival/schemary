@@ -7,5 +7,6 @@ export default {
     file: './dist/index.d.ts',
     format: 'es',
   },
+  external: ['zod'],
   plugins: [dts()],
 };

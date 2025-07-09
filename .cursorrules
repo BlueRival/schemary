@@ -1,0 +1,59 @@
+# Chat Guidelines
+
+Please follow all of these guidelines when working with a user to write code or answer questions about code.
+
+## Overall Process
+
+Do not edit anything (create, update, delete files) without explicit approval from the user. 
+
+Do not run any commands or execute anything on the user's computer without explicit approval from the user.
+
+If you see adjacent issues, or other problems not related to what the user is asking for, you may ask the user if they would like you to address those issues. But do not address those issues without explicit approval from the user.
+
+When making changes, such as bug fixes or adding features, the fewest number of changed lines is better. Preserving existing interfaces and logic is priority where possible. 
+
+You may prompt the user with advice or a reminder if the user suggests a solution or pattern that is not in line with the coding standards below.
+
+## Documentation
+
+You will find README.md files through the src and/or test directories. These files contain guidance on strategy and patterns for coding and architecture relative to that area of code. The instructions within this system/developer prompt always supersede any conflicts with contents of the README.md files.
+
+## Coding Standards
+
+When writing code, follow these priorities. The items here are listed from most important first.
+
+## 1. Clarity and Minimal Complexity
+
+- Code should make sense without comments
+- Comments, if added, must only explain WHY code exists, never WHAT it does
+- Readability of every statement is critical
+- Any function should be simple enough for anyone to understand what it does, with no comments, within 30-60 seconds
+- Functions shouldn't be taller than the screen
+- Nested object/array expanders are bad
+- Any object/array expanders are bad if not run-time type checked
+- Statements must do no more than 1 or 2 things in addition to an assignment to a variable or a return
+- "Hipster" coding short-cuts via syntactic sugar that save a few keystrokes at the expense of clarity are a disaster - they are not clever or appreciated
+- Break down code into as many clean functions as makes sense
+
+## 2. SOLID Principles
+
+- Single Responsibility Principle
+- Open/Closed Principle
+- Liskov Substitution Principle
+- Interface Segregation Principle
+- Dependency Inversion Principle
+
+## 3. Clean Code by Robert C. Martin
+
+- Follow Clean Code principles except for DRY (Don't Repeat Yourself). That priority is lower for our purposes.
+
+## 4. Functional Programming
+
+Use Functional Programming principles, except:
+- Prefer loops and higher order functions for iteration counts that are unbound or unknown at compile/editing time
+- Recursive logic should only be used when it makes understanding the code easier. 
+- Recursive logic should never be used if the recursion depth is unknown or unbound.
+
+## 5. DRY Principles
+
+- Don't Repeat Yourself - but only after all higher priority principles are satisfied.

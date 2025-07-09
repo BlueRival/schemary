@@ -1,8 +1,13 @@
 {
   "name": "schemary",
-  "version": "1.2.4",
-  "description": "A schema validation and mapping utility library",
+  "version": "1.3.0",
   "type": "module",
+  "author": "Anthony Hildoer <anthony@bluerival.com>",
+  "description": "A schema validation and mapping utility library",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -11,10 +16,6 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
   "scripts": {
     "build:dts": "tsc -p tsconfig.build-dts.json && rollup --config rollup/dts.config.js && rm -rf dist/temp-dts",
     "build": "npm run test && npm run lint && npm run clean && npm run build:dts && rollup --config rollup/mini.config.js",
@@ -36,7 +37,6 @@
     "dates",
     "timestamps"
   ],
-  "author": "BlueRival",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -46,6 +46,14 @@
     "url": "https://github.com/BlueRival/schemary/issues"
   },
   "homepage": "https://github.com/BlueRival/schemary#readme",
+  "peerDependencies": {
+    "zod": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": false
+    }
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.26.0",
@@ -68,7 +76,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.0",
     "vitest": "^3.1.3",
-    "zod": "^3.24.4"
+    "zod": "^3.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
