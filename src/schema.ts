@@ -103,27 +103,18 @@ export function shift<
  *
  * @template T - The expected output type after validation
  * @param targetSchema - The Zod targetSchema to validate the parameters against
- * @param params - The unknown input parameters to validate (typically from a request)
+ * @param value - The unknown input parameters to validate (typically from a request)
  * @returns The validated and typed parameters of validation succeeds
  * @throws Error with detailed validation error messages if validation fails
  */
-export function validate<
-  TargetType extends JSONObject, // TargetType is the object/element type
-  ArrayTargetType extends JSONObject, // TargetType is the object/element type
-  TargetSchema extends
-    | InputObjectSchema<TargetType>
-    | InputArraySchema<ArrayTargetType>,
->(params: JSONType, targetSchema: TargetSchema): z.infer<TargetSchema> {
-  const result = targetSchema.safeParse(params);
+export function validate<TargetSchema extends z.ZodType<unknown, any, unknown>>(
+  value: unknown,
+  targetSchema: TargetSchema,
+): z.infer<TargetSchema> {
+  const result = targetSchema.safeParse(value);
 
   if (result.success) {
-    if (_isZodArray(targetSchema)) {
-      // the safe parse call above ensures this is valid
-      return result.data as ArrayTargetType[];
-    } else {
-      // the safe parse call above ensures this is valid
-      return result.data as TargetType;
-    }
+    return result.data;
   } else {
     const errorMessages = result.error.errors
       .flatMap((err) => {

@@ -134,19 +134,6 @@ export function createTests(SchemaJSON: typeof TestJSON) {
         expect(() => parse(jsonString, schema)).toThrow();
       });
 
-      it('should apply override values for missing or override properties', () => {
-        const jsonString = '{"name":"Alice"}';
-        const schema = z.object({
-          name: z.string(),
-          age: z.number(),
-          country: z.string().default('Unknown'),
-        });
-        const overrides = { age: 30, country: 'USA' };
-
-        const result = parse(jsonString, schema, overrides);
-        expect(result).toEqual({ name: 'Alice', age: 30, country: 'USA' });
-      });
-
       it('should handle complex nested objects in JSON', () => {
         const jsonString = '{"user":{"profile":{"name":"Bob","age":30}}}';
         const schema = z.object({
@@ -306,26 +293,6 @@ export function createTests(SchemaJSON: typeof TestJSON) {
         expect(result).toHaveLength(2);
         testUserObject(result[0], undefined, true);
         testAdminObject(result[1], undefined, true);
-      });
-
-      it('should apply overrides to parsed JSON with a union schema', () => {
-        // Create a JSON string with admin data but missing location
-        const adminJson = JSON.stringify({
-          type: 'admin',
-          id: 2,
-          role: 'superuser',
-          accessLevel: 10,
-        });
-
-        // Define a discriminated union schema
-        const usersSchema = z.discriminatedUnion('type', [
-          AdminSchema,
-          UserSchema,
-        ]);
-
-        // Apply an override for the location field
-        const result = parse(adminJson, usersSchema, { location: 'remote' });
-        testAdminObject(result, 'remote', false);
       });
 
       it('should throw an error when parsing invalid JSON for a union schema', () => {

@@ -1,13 +1,6 @@
-import { JSONObject, JSONObjectArray } from './types.js';
+import { JSONObject, JSONObjectArray, JSONType } from './types.js';
 
-import {
-  InputObjectSchema,
-  InputArraySchema,
-  NoInferPartial,
-} from './types.js';
 import { z } from 'zod';
-import { _isZodArray } from './helpers.js';
-import { shift } from './schema.js';
 
 /**
  * Parses a JSON string and validates it against a Zod schema.
@@ -23,41 +16,18 @@ import { shift } from './schema.js';
  * @template T - The target object type to convert to
  * @param input - The JSON string to parse
  * @param targetSchema - The Zod schema that defines and validates the target type
- * @param targetOverrides - Optional values to override fields in the target type.
  * @returns A validated object of type T with all required properties
  * @throws Will throw if the string is not valid JSON or if validation fails
  */
-export function parse<
-  TargetType extends JSONObject, // TargetType is the object/element type
-  ArrayTargetType extends JSONObject, // TargetType is the object/element type
-  TargetSchema extends
-    | InputObjectSchema<TargetType>
-    | InputArraySchema<ArrayTargetType>,
->(
+export function parse<TargetSchema extends z.ZodType<unknown, any, unknown>>(
   input: string,
   targetSchema: TargetSchema,
-  targetOverrides:
-    | NoInferPartial<TargetType>
-    | NoInferPartial<ArrayTargetType> = {},
 ): z.infer<TargetSchema> {
   // Parse the JSON string. We don't know the type, but that is OK
   // because convert will type-check it.
-  const parsedJson = JSON.parse(input) as JSONObject | JSONObjectArray;
+  const parsedJson = JSON.parse(input) as JSONType;
 
-  // Use convert to validate and transform the parsed JSON
-  if (_isZodArray(targetSchema)) {
-    return shift(
-      parsedJson,
-      targetSchema as InputArraySchema<ArrayTargetType>,
-      targetOverrides as NoInferPartial<ArrayTargetType>,
-    ) as ArrayTargetType[];
-  } else {
-    return shift(
-      parsedJson,
-      targetSchema as InputObjectSchema<TargetType>,
-      targetOverrides as NoInferPartial<TargetType>,
-    ) as TargetType;
-  }
+  return targetSchema.parse(parsedJson);
 }
 
 /**
@@ -77,11 +47,7 @@ export function parse<
  * @throws Will throw if validation fails
  */
 export function stringify<
-  TargetType extends JSONObject, // TargetType is the object/element type
-  ArrayTargetType extends JSONObject, // TargetType is the object/element type
-  TargetSchema extends
-    | InputObjectSchema<TargetType>
-    | InputArraySchema<ArrayTargetType>,
+  TargetSchema extends z.ZodType<unknown, any, unknown>,
 >(
   input: JSONObject | JSONObjectArray,
   targetSchema: TargetSchema,
@@ -92,7 +58,7 @@ export function stringify<
   space?: string | number,
 ): string {
   // Validate the input object against the schema
-  const validatedObject = shift(input, targetSchema);
+  const validatedObject = targetSchema.parse(input);
 
   /**
    * This is kind of a silly situation, `JSON.stringify()` has two options for the replacer type, the way it is defined

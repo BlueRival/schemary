@@ -7,7 +7,7 @@ A powerful, type-safe schema validation, transformation, and bidirectional mappi
 
 This library, as far as I can tell, is the only maintained tool of its kind on NPM.
 
-Only 268k, zero external dependencies.
+Less than 200k unpacked
 
 ## Major Release: v1.x
 
